@@ -189,6 +189,18 @@ export function ProductCard({ product, onChange, onRemove, usdToIlsRate, categor
               כדי להרוויח <strong>{product.targetProfitPercent}%</strong> על העלות, מחיר המכירה המומלץ ליחידה הוא{' '}
               <strong>{formatCurrency(totals.suggestedSalePrice)}</strong>
             </p>
+            <div className="mt-3 grid grid-cols-2 gap-3">
+              <div className="rounded-md border border-emerald-900 bg-emerald-950/20 p-3 text-sm">
+                <div className="text-xs text-emerald-400">רווח צפוי (לפי המחיר הרצוי, על כל הכמות)</div>
+                <div className="font-semibold text-emerald-300">{formatCurrency(totals.expectedProfit)}</div>
+              </div>
+              <div className="rounded-md border border-slate-700 bg-slate-800/60 p-3 text-sm">
+                <div className="text-xs text-slate-400">רווח בפועל (לפי מכירות שנרשמו)</div>
+                <div className={`font-semibold ${totals.totalProfit >= 0 ? 'text-emerald-300' : 'text-red-400'}`}>
+                  {formatCurrency(totals.totalProfit)}
+                </div>
+              </div>
+            </div>
           </Section>
 
           <Section title="משלוחים / הגעה">

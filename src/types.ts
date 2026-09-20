@@ -54,6 +54,7 @@ export interface ProductTotals {
   totalCost: number
   costPerUnit: number
   suggestedSalePrice: number
+  expectedProfit: number
   quantitySold: number
   quantityRemaining: number
   totalRevenue: number

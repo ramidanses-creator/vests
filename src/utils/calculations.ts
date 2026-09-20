@@ -23,6 +23,7 @@ export function calculateProductTotals(product: Product, fallbackUsdToIlsRate: n
   const totalCost = purchaseTotal + otherExpenses
   const costPerUnit = quantityImported > 0 ? totalCost / quantityImported : 0
   const suggestedSalePrice = costPerUnit * (1 + product.targetProfitPercent / 100)
+  const expectedProfit = (suggestedSalePrice - costPerUnit) * quantityImported
 
   const quantitySold = product.sales.reduce((sum, s) => sum + s.quantity, 0)
   const totalRevenue = product.sales.reduce((sum, s) => sum + s.quantity * s.pricePerUnit, 0)
@@ -39,6 +40,7 @@ export function calculateProductTotals(product: Product, fallbackUsdToIlsRate: n
     totalCost,
     costPerUnit,
     suggestedSalePrice,
+    expectedProfit,
     quantitySold,
     quantityRemaining,
     totalRevenue,
