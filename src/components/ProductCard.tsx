@@ -8,38 +8,46 @@ interface Props {
   onChange: (product: Product) => void
   onRemove: () => void
   usdToIlsRate: number | null
+  categoryOptions: string[]
 }
 
-export function ProductCard({ product, onChange, onRemove, usdToIlsRate }: Props) {
+export function ProductCard({ product, onChange, onRemove, usdToIlsRate, categoryOptions }: Props) {
   const totals = calculateProductTotals(product, usdToIlsRate)
-  const locked = product.status === 'standby'
+  const inSystem = product.status === 'standby'
 
-  function toggleLock() {
-    onChange({ ...product, status: locked ? 'active' : 'standby' })
+  function toggleStatus() {
+    onChange({ ...product, status: inSystem ? 'active' : 'standby' })
   }
 
   return (
-    <div className={`rounded-lg border p-4 shadow-sm ${locked ? 'border-amber-300 bg-amber-50/40' : 'border-slate-200 bg-white'}`}>
+    <div className={`rounded-lg border p-4 shadow-sm ${inSystem ? 'border-sky-200 bg-sky-50/40' : 'border-slate-200 bg-white'}`}>
       <div className="mb-4 flex items-start justify-between gap-4">
-        <div className="flex-1">
+        <div className="flex flex-1 flex-col gap-2 sm:flex-row">
           <input
             type="text"
             placeholder="שם המוצר"
             value={product.name}
-            disabled={locked}
             onChange={(e) => onChange({ ...product, name: e.target.value })}
-            className="w-full rounded border border-slate-300 px-3 py-2 text-lg font-semibold disabled:bg-transparent disabled:text-slate-500"
+            className="w-full flex-1 rounded border border-slate-300 px-3 py-2 text-lg font-semibold"
+          />
+          <input
+            type="text"
+            list="category-options"
+            placeholder="קטגוריה"
+            value={product.category}
+            onChange={(e) => onChange({ ...product, category: e.target.value })}
+            className="w-full rounded border border-slate-300 px-3 py-2 text-sm text-slate-700 sm:w-40"
           />
         </div>
         <button
-          onClick={toggleLock}
+          onClick={toggleStatus}
           className={`whitespace-nowrap rounded border px-3 py-2 text-xs ${
-            locked
-              ? 'border-amber-400 bg-amber-100 text-amber-800 hover:bg-amber-200'
+            inSystem
+              ? 'border-sky-300 bg-sky-100 text-sky-800 hover:bg-sky-200'
               : 'border-slate-200 text-slate-600 hover:bg-slate-50'
           }`}
         >
-          {locked ? '🔒 בהמתנה — לחצו לביטול נעילה' : 'נעל ושים בהמתנה'}
+          {inSystem ? '✓ רשום במערכת — לחצו להחזיר לפעילים' : 'סמן כרשום במערכת'}
         </button>
         <button
           onClick={onRemove}
@@ -49,16 +57,21 @@ export function ProductCard({ product, onChange, onRemove, usdToIlsRate }: Props
         </button>
       </div>
 
+      <datalist id="category-options">
+        {categoryOptions.map((c) => (
+          <option key={c} value={c} />
+        ))}
+      </datalist>
+
       <div className="mb-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
         <label className="flex flex-col gap-1 text-xs text-slate-500">
           כמות שיובאה
           <input
             type="number"
             min={0}
-            disabled={locked}
             value={product.quantityImported === 0 ? '' : product.quantityImported}
             onChange={(e) => onChange({ ...product, quantityImported: Number(e.target.value) || 0 })}
-            className="rounded border border-slate-300 px-2 py-1.5 text-sm text-slate-900 disabled:bg-slate-100 disabled:text-slate-400"
+            className="rounded border border-slate-300 px-2 py-1.5 text-sm text-slate-900"
           />
         </label>
         <label className="flex flex-col gap-1 text-xs text-slate-500">
@@ -67,23 +80,20 @@ export function ProductCard({ product, onChange, onRemove, usdToIlsRate }: Props
             <input
               type="number"
               min={0}
-              disabled={locked}
               value={product.purchasePricePerUnit === 0 ? '' : product.purchasePricePerUnit}
               onChange={(e) => onChange({ ...product, purchasePricePerUnit: Number(e.target.value) || 0 })}
-              className="w-full rounded border border-slate-300 px-2 py-1.5 text-sm text-slate-900 disabled:bg-slate-100 disabled:text-slate-400"
+              className="w-full rounded border border-slate-300 px-2 py-1.5 text-sm text-slate-900"
             />
             <div className="flex overflow-hidden rounded border border-slate-300 text-xs">
               <button
                 onClick={() => onChange({ ...product, purchaseCurrency: 'ILS' })}
-                disabled={locked}
-                className={`px-2 py-1.5 disabled:opacity-40 ${product.purchaseCurrency === 'ILS' ? 'bg-slate-700 text-white' : 'bg-white text-slate-500'}`}
+                className={`px-2 py-1.5 ${product.purchaseCurrency === 'ILS' ? 'bg-slate-700 text-white' : 'bg-white text-slate-500'}`}
               >
                 ₪
               </button>
               <button
                 onClick={() => onChange({ ...product, purchaseCurrency: 'USD' })}
-                disabled={locked}
-                className={`px-2 py-1.5 disabled:opacity-40 ${product.purchaseCurrency === 'USD' ? 'bg-slate-700 text-white' : 'bg-white text-slate-500'}`}
+                className={`px-2 py-1.5 ${product.purchaseCurrency === 'USD' ? 'bg-slate-700 text-white' : 'bg-white text-slate-500'}`}
               >
                 $
               </button>
@@ -101,10 +111,9 @@ export function ProductCard({ product, onChange, onRemove, usdToIlsRate }: Props
           <input
             type="number"
             min={0}
-            disabled={locked}
             value={product.targetProfitPercent === 0 ? '' : product.targetProfitPercent}
             onChange={(e) => onChange({ ...product, targetProfitPercent: Number(e.target.value) || 0 })}
-            className="rounded border border-slate-300 px-2 py-1.5 text-sm text-slate-900 disabled:bg-slate-100 disabled:text-slate-400"
+            className="rounded border border-slate-300 px-2 py-1.5 text-sm text-slate-900"
           />
         </label>
       </div>
@@ -121,21 +130,15 @@ export function ProductCard({ product, onChange, onRemove, usdToIlsRate }: Props
           expenses={product.expenses}
           onChange={(expenses) => onChange({ ...product, expenses })}
           usdToIlsRate={usdToIlsRate}
-          disabled={locked}
         />
-        <SalesList
-          sales={product.sales}
-          onChange={(sales) => onChange({ ...product, sales })}
-          disabled={locked}
-        />
+        <SalesList sales={product.sales} onChange={(sales) => onChange({ ...product, sales })} />
       </div>
 
       <textarea
         placeholder="הערות"
         value={product.notes}
-        disabled={locked}
         onChange={(e) => onChange({ ...product, notes: e.target.value })}
-        className="mt-4 w-full rounded border border-slate-300 px-3 py-2 text-sm disabled:bg-slate-100 disabled:text-slate-400"
+        className="mt-4 w-full rounded border border-slate-300 px-3 py-2 text-sm"
         rows={2}
       />
 

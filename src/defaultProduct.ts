@@ -4,6 +4,7 @@ export function createDefaultProduct(): Product {
   return {
     id: crypto.randomUUID(),
     name: '',
+    category: '',
     quantityImported: 0,
     purchasePricePerUnit: 0,
     purchaseCurrency: 'USD',

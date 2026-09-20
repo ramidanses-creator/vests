@@ -1,5 +1,9 @@
 export type Currency = 'ILS' | 'USD'
 export type ProductStatus = 'active' | 'standby'
+export const PRODUCT_STATUS_LABELS: Record<ProductStatus, string> = {
+  active: 'פעילים',
+  standby: 'רשומים במערכת',
+}
 
 export interface Expense {
   id: string
@@ -18,6 +22,7 @@ export interface Sale {
 export interface Product {
   id: string
   name: string
+  category: string
   quantityImported: number
   purchasePricePerUnit: number
   purchaseCurrency: Currency

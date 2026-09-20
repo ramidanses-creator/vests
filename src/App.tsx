@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { CurrencyConverter } from './components/CurrencyConverter'
+import { InventoryByCategory } from './components/InventoryByCategory'
 import { ProductCard } from './components/ProductCard'
 import { SummaryPanel } from './components/SummaryPanel'
 import { createDefaultProduct } from './defaultProduct'
 import { useOfficialRate } from './hooks/useOfficialRate'
-import type { Product } from './types'
+import { PRODUCT_STATUS_LABELS, type Product, type ProductStatus } from './types'
 
 const STORAGE_KEY = 'import-tracker-products'
 
@@ -13,6 +14,7 @@ function normalizeProduct(raw: Partial<Product>): Product {
   return {
     ...fallback,
     ...raw,
+    category: raw.category ?? fallback.category,
     purchasePricePerUnit: raw.purchasePricePerUnit ?? fallback.purchasePricePerUnit,
     purchaseCurrency: raw.purchaseCurrency ?? fallback.purchaseCurrency,
     targetProfitPercent: raw.targetProfitPercent ?? fallback.targetProfitPercent,
@@ -46,7 +48,7 @@ export default function App() {
     const stored = loadProducts()
     return stored.length > 0 ? stored : [createDefaultProduct()]
   })
-  const [tab, setTab] = useState<'active' | 'standby'>('active')
+  const [tab, setTab] = useState<ProductStatus>('active')
   const { officialRate } = useOfficialRate()
 
   useEffect(() => {
@@ -67,6 +69,10 @@ export default function App() {
 
   const visibleProducts = useMemo(() => products.filter((p) => p.status === tab), [products, tab])
   const standbyCount = useMemo(() => products.filter((p) => p.status === 'standby').length, [products])
+  const categoryOptions = useMemo(
+    () => Array.from(new Set(products.map((p) => p.category.trim()).filter(Boolean))).sort((a, b) => a.localeCompare(b, 'he')),
+    [products],
+  )
 
   return (
     <div className="min-h-screen bg-slate-100 pb-16" dir="rtl">
@@ -81,6 +87,7 @@ export default function App() {
 
       <main className="mx-auto mt-6 flex max-w-5xl flex-col gap-6 px-4">
         <SummaryPanel products={products} usdToIlsRate={officialRate} />
+        <InventoryByCategory products={products} usdToIlsRate={officialRate} />
         <CurrencyConverter />
 
         <div className="flex gap-2">
@@ -90,21 +97,21 @@ export default function App() {
               tab === 'active' ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-slate-300 bg-white text-slate-600 hover:bg-slate-50'
             }`}
           >
-            פעילים
+            {PRODUCT_STATUS_LABELS.active}
           </button>
           <button
             onClick={() => setTab('standby')}
             className={`rounded-full border px-4 py-1.5 text-sm ${
-              tab === 'standby' ? 'border-amber-500 bg-amber-500 text-white' : 'border-slate-300 bg-white text-slate-600 hover:bg-slate-50'
+              tab === 'standby' ? 'border-sky-500 bg-sky-500 text-white' : 'border-slate-300 bg-white text-slate-600 hover:bg-slate-50'
             }`}
           >
-            בהמתנה {standbyCount > 0 ? `(${standbyCount})` : ''}
+            {PRODUCT_STATUS_LABELS.standby} {standbyCount > 0 ? `(${standbyCount})` : ''}
           </button>
         </div>
 
         {visibleProducts.length === 0 && (
           <p className="rounded-lg border border-dashed border-slate-300 bg-white p-6 text-center text-sm text-slate-400">
-            {tab === 'active' ? 'אין מוצרים פעילים כרגע.' : 'אין מוצרים בהמתנה כרגע.'}
+            {tab === 'active' ? 'אין מוצרים פעילים כרגע.' : 'אין מוצרים רשומים במערכת כרגע.'}
           </p>
         )}
 
@@ -115,6 +122,7 @@ export default function App() {
             onChange={updateProduct}
             onRemove={() => removeProduct(product.id)}
             usdToIlsRate={officialRate}
+            categoryOptions={categoryOptions}
           />
         ))}
 
