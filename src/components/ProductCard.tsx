@@ -171,6 +171,21 @@ export function ProductCard({ product, onChange, onRemove, usdToIlsRate, categor
                   className="rounded border border-slate-700 bg-slate-950/60 px-2 py-1.5 text-sm text-slate-100"
                 />
               </label>
+              <label className="flex flex-col gap-1 text-xs text-slate-400">
+                או: מחיר מכירה רצוי ליחידה
+                <input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={totals.suggestedSalePrice === 0 ? '' : Number(totals.suggestedSalePrice.toFixed(2))}
+                  onChange={(e) => {
+                    const price = Number(e.target.value) || 0
+                    const percent = totals.costPerUnit > 0 ? (price / totals.costPerUnit - 1) * 100 : 0
+                    onChange({ ...product, targetProfitPercent: Math.max(0, Number(percent.toFixed(2))) })
+                  }}
+                  className="rounded border border-slate-700 bg-slate-950/60 px-2 py-1.5 text-sm text-slate-100"
+                />
+              </label>
             </div>
             <p className="mt-3 text-sm text-emerald-300">
               כדי להרוויח <strong>{product.targetProfitPercent}%</strong> על העלות, מחיר המכירה המומלץ ליחידה הוא{' '}
