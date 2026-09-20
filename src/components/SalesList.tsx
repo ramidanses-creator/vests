@@ -43,15 +43,16 @@ export function SalesList({ sales, onChange }: Props) {
               className="rounded border border-slate-700 bg-slate-950/60 px-2 py-1.5 text-sm text-slate-100"
             />
             <input
-              type="number"
+              type="text"
+              inputMode="decimal"
               placeholder="כמות"
-              min={1}
               value={sale.quantity === 0 ? '' : sale.quantity}
               onChange={(e) => updateSale(sale.id, { quantity: Number(e.target.value) || 0 })}
               className="w-20 rounded border border-slate-700 bg-slate-950/60 px-2 py-1.5 text-sm text-slate-100"
             />
             <input
-              type="number"
+              type="text"
+              inputMode="decimal"
               placeholder="מחיר ליחידה"
               value={sale.pricePerUnit === 0 ? '' : sale.pricePerUnit}
               onChange={(e) => updateSale(sale.id, { pricePerUnit: Number(e.target.value) || 0 })}

@@ -121,8 +121,8 @@ export function ProductCard({
                 מחיר רכישה ליחידה
                 <div className="flex items-center gap-1">
                   <input
-                    type="number"
-                    min={0}
+                    type="text"
+                    inputMode="decimal"
                     value={product.purchasePricePerUnit === 0 ? '' : product.purchasePricePerUnit}
                     onChange={(e) => onChange({ ...product, purchasePricePerUnit: Number(e.target.value) || 0 })}
                     className="w-full rounded border border-slate-700 bg-slate-950/60 px-2 py-1.5 text-sm text-slate-100"
@@ -147,7 +147,8 @@ export function ProductCard({
                 שער דולר נעול למוצר
                 <div className="flex items-center gap-1">
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="decimal"
                     step="0.0001"
                     placeholder={usdToIlsRate ? usdToIlsRate.toFixed(4) : '—'}
                     value={product.usdRateOverride ?? ''}
@@ -173,7 +174,8 @@ export function ProductCard({
               <label className="flex flex-col gap-1 text-xs text-slate-400">
                 רווח רצוי (%)
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="decimal"
                   value={product.targetProfitPercent === 0 ? '' : product.targetProfitPercent}
                   onChange={(e) => onChange({ ...product, targetProfitPercent: Number(e.target.value) || 0 })}
                   className="rounded border border-slate-700 bg-slate-950/60 px-2 py-1.5 text-sm text-slate-100"
@@ -182,7 +184,8 @@ export function ProductCard({
               <label className="flex flex-col gap-1 text-xs text-slate-400">
                 או: מחיר מכירה רצוי ליחידה
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="decimal"
                   step="0.01"
                   value={totals.suggestedSalePrice === 0 ? '' : Number(totals.suggestedSalePrice.toFixed(2))}
                   onChange={(e) => {

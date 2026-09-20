@@ -37,9 +37,9 @@ export function ShipmentsList({ shipments, onChange }: Props) {
           <div key={s.id} className="flex flex-wrap items-center gap-2">
             <span className="w-14 text-xs text-slate-500">חלק {i + 1}</span>
             <input
-              type="number"
+              type="text"
+              inputMode="decimal"
               placeholder="כמות"
-              min={0}
               value={s.quantity === 0 ? '' : s.quantity}
               onChange={(e) => updateShipment(s.id, { quantity: Number(e.target.value) || 0 })}
               className="w-20 rounded border border-slate-700 bg-slate-950/60 px-2 py-1.5 text-sm text-slate-100"

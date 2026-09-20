@@ -87,7 +87,8 @@ export function CurrencyConverter() {
           <label className="flex flex-col gap-1 text-xs text-slate-400">
             דולר ($)
             <input
-              type="number"
+              type="text"
+              inputMode="decimal"
               placeholder="0.00"
               value={usd}
               onChange={(e) => setUsd(e.target.value)}
@@ -97,7 +98,8 @@ export function CurrencyConverter() {
           <label className="flex flex-col gap-1 text-xs text-slate-400">
             שקל (₪)
             <input
-              type="number"
+              type="text"
+              inputMode="decimal"
               placeholder="0.00"
               value={ils}
               onChange={(e) => setIls(e.target.value)}
@@ -121,7 +123,8 @@ export function CurrencyConverter() {
           <label className="flex flex-col gap-1 text-xs text-slate-400">
             כמות יחידות
             <input
-              type="number"
+              type="text"
+              inputMode="decimal"
               placeholder="0"
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
@@ -131,7 +134,8 @@ export function CurrencyConverter() {
           <label className="flex flex-col gap-1 text-xs text-slate-400">
             עלות ליחידה ($)
             <input
-              type="number"
+              type="text"
+              inputMode="decimal"
               placeholder="0.00"
               value={usdPerUnit}
               onChange={(e) => setUsdPerUnit(e.target.value)}
@@ -141,7 +145,8 @@ export function CurrencyConverter() {
           <label className="flex flex-col gap-1 text-xs text-slate-400">
             עלות ליחידה (₪)
             <input
-              type="number"
+              type="text"
+              inputMode="decimal"
               placeholder="0.00"
               value={ilsPerUnit}
               onChange={(e) => setIlsPerUnit(e.target.value)}

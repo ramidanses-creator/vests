@@ -57,7 +57,8 @@ function ExpenseRow({
           className="min-w-0 flex-1 rounded border border-slate-700 bg-slate-950/60 px-2 py-1.5 text-sm text-slate-100"
         />
         <input
-          type="number"
+          type="text"
+          inputMode="decimal"
           placeholder="סכום"
           value={expense.amount === 0 ? '' : expense.amount}
           onChange={(e) => onUpdate(expense.id, { amount: Number(e.target.value) || 0 })}
