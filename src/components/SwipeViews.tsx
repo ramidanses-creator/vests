@@ -67,10 +67,11 @@ export function SwipeViews({ activeIndex, count, onChange, renderPanel, loop = t
       }
       if (g.axis === 'x') {
         e.preventDefault()
-        // Reversed: dragging left moves to the previous view, dragging right to the next.
-        let nextDx = -dx
-        if (nextDx < 0 && !hasNext) nextDx = nextDx / 3
-        if (nextDx > 0 && !hasPrev) nextDx = nextDx / 3
+        // The content follows the finger; dragging left (dx<0) will land on the previous view,
+        // dragging right (dx>0) on the next one — see the DOM order below (next, current, prev).
+        let nextDx = dx
+        if (dx < 0 && !hasPrev) nextDx = dx / 3
+        if (dx > 0 && !hasNext) nextDx = dx / 3
         g.dx = nextDx
         setDragPx(nextDx)
       }
@@ -80,10 +81,10 @@ export function SwipeViews({ activeIndex, count, onChange, renderPanel, loop = t
       const g = gesture.current
       if (g.axis === 'x' && width > 0) {
         const threshold = width * 0.22
-        if (g.dx <= -threshold && hasNext) {
-          snapTo(-width, () => onChange((activeIndex + 1) % count))
-        } else if (g.dx >= threshold && hasPrev) {
-          snapTo(width, () => onChange((activeIndex - 1 + count) % count))
+        if (g.dx <= -threshold && hasPrev) {
+          snapTo(-width, () => onChange((activeIndex - 1 + count) % count))
+        } else if (g.dx >= threshold && hasNext) {
+          snapTo(width, () => onChange((activeIndex + 1) % count))
         } else {
           snapTo(0)
         }
@@ -112,9 +113,9 @@ export function SwipeViews({ activeIndex, count, onChange, renderPanel, loop = t
           transition: transitioning ? `transform ${SNAP_MS}ms ease-out` : 'none',
         }}
       >
-        <div style={{ flex: '0 0 100%', minWidth: 0 }}>{hasPrev ? renderPanel(prevIndex) : null}</div>
-        <div style={{ flex: '0 0 100%', minWidth: 0 }}>{renderPanel(activeIndex)}</div>
         <div style={{ flex: '0 0 100%', minWidth: 0 }}>{hasNext ? renderPanel(nextIndex) : null}</div>
+        <div style={{ flex: '0 0 100%', minWidth: 0 }}>{renderPanel(activeIndex)}</div>
+        <div style={{ flex: '0 0 100%', minWidth: 0 }}>{hasPrev ? renderPanel(prevIndex) : null}</div>
       </div>
     </div>
   )
