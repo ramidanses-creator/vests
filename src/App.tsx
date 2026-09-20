@@ -19,6 +19,8 @@ function normalizeProduct(raw: Partial<Product>): Product {
     purchaseCurrency: raw.purchaseCurrency ?? fallback.purchaseCurrency,
     targetProfitPercent: raw.targetProfitPercent ?? fallback.targetProfitPercent,
     status: raw.status ?? fallback.status,
+    hasArrived: raw.hasArrived ?? fallback.hasArrived,
+    expectedArrivalDate: raw.expectedArrivalDate ?? fallback.expectedArrivalDate,
     expenses: raw.expenses ?? fallback.expenses,
     sales: raw.sales ?? fallback.sales,
   }
@@ -75,11 +77,11 @@ export default function App() {
   )
 
   return (
-    <div className="min-h-screen bg-slate-100 pb-16" dir="rtl">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-5xl flex-col gap-1 px-4 py-5">
-          <h1 className="text-2xl font-bold text-slate-900">מעקב הזמנות ורווחים</h1>
-          <p className="text-sm text-slate-500">
+    <div className="min-h-screen bg-slate-950 pb-16" dir="rtl">
+      <header className="sticky top-0 z-10 border-b border-slate-800 bg-slate-950/95 backdrop-blur">
+        <div className="mx-auto flex max-w-5xl flex-col gap-1 px-4 py-4 sm:py-5">
+          <h1 className="text-xl font-bold text-white sm:text-2xl">מעקב הזמנות ורווחים</h1>
+          <p className="text-sm text-slate-400">
             רשמו לכל מוצר את כל ההוצאות עד הגעתו לארץ ואת המכירות שלו — האפליקציה תחשב עלות ליחידה ורווח בפועל.
           </p>
         </div>
@@ -90,11 +92,11 @@ export default function App() {
         <InventoryByCategory products={products} usdToIlsRate={officialRate} />
         <CurrencyConverter />
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setTab('active')}
             className={`rounded-full border px-4 py-1.5 text-sm ${
-              tab === 'active' ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-slate-300 bg-white text-slate-600 hover:bg-slate-50'
+              tab === 'active' ? 'border-indigo-500 bg-indigo-600 text-white' : 'border-slate-700 bg-slate-900 text-slate-300 hover:bg-slate-800'
             }`}
           >
             {PRODUCT_STATUS_LABELS.active}
@@ -102,7 +104,7 @@ export default function App() {
           <button
             onClick={() => setTab('standby')}
             className={`rounded-full border px-4 py-1.5 text-sm ${
-              tab === 'standby' ? 'border-sky-500 bg-sky-500 text-white' : 'border-slate-300 bg-white text-slate-600 hover:bg-slate-50'
+              tab === 'standby' ? 'border-sky-500 bg-sky-600 text-white' : 'border-slate-700 bg-slate-900 text-slate-300 hover:bg-slate-800'
             }`}
           >
             {PRODUCT_STATUS_LABELS.standby} {standbyCount > 0 ? `(${standbyCount})` : ''}
@@ -110,7 +112,7 @@ export default function App() {
         </div>
 
         {visibleProducts.length === 0 && (
-          <p className="rounded-lg border border-dashed border-slate-300 bg-white p-6 text-center text-sm text-slate-400">
+          <p className="rounded-lg border border-dashed border-slate-700 bg-slate-900 p-6 text-center text-sm text-slate-500">
             {tab === 'active' ? 'אין מוצרים פעילים כרגע.' : 'אין מוצרים רשומים במערכת כרגע.'}
           </p>
         )}
@@ -129,7 +131,7 @@ export default function App() {
         {tab === 'active' && (
           <button
             onClick={addProduct}
-            className="rounded-lg border border-dashed border-slate-400 bg-white px-4 py-3 text-sm text-slate-500 hover:bg-slate-50"
+            className="rounded-lg border border-dashed border-slate-700 bg-slate-900 px-4 py-3 text-sm text-slate-400 hover:bg-slate-800"
           >
             + מוצר חדש
           </button>

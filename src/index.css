@@ -2,11 +2,17 @@
 
 html {
   direction: rtl;
+  color-scheme: dark;
 }
 
 body {
   margin: 0;
   font-family: system-ui, 'Segoe UI', Arial, sans-serif;
-  background: #f4f5f7;
-  color: #1f2430;
+  background: #0b1220;
+  color: #e5e9f0;
+}
+
+input,
+textarea {
+  color-scheme: dark;
 }

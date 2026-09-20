@@ -74,84 +74,84 @@ export function CurrencyConverter() {
       : null
 
   return (
-    <div className="flex flex-col gap-6 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+    <div className="flex flex-col gap-6 rounded-xl border border-slate-800 bg-slate-900 p-4 shadow-lg shadow-black/20">
       <div>
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-slate-700">מחשבון המרה דולר / שקל</h2>
-          <button onClick={resetTotal} className="text-xs text-slate-400 hover:text-slate-600">
+          <h2 className="text-sm font-semibold text-slate-200">מחשבון המרה דולר / שקל</h2>
+          <button onClick={resetTotal} className="text-xs text-slate-500 hover:text-slate-300">
             נקה
           </button>
         </div>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <label className="flex flex-col gap-1 text-xs text-slate-500">
+          <label className="flex flex-col gap-1 text-xs text-slate-400">
             דולר ($)
             <input
               type="number"
               placeholder="0.00"
               value={usd}
               onChange={(e) => setUsd(e.target.value)}
-              className="rounded border border-slate-300 px-3 py-2 text-sm text-slate-900"
+              className="rounded border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm text-slate-100"
             />
           </label>
-          <label className="flex flex-col gap-1 text-xs text-slate-500">
+          <label className="flex flex-col gap-1 text-xs text-slate-400">
             שקל (₪)
             <input
               type="number"
               placeholder="0.00"
               value={ils}
               onChange={(e) => setIls(e.target.value)}
-              className="rounded border border-slate-300 px-3 py-2 text-sm text-slate-900"
+              className="rounded border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm text-slate-100"
             />
           </label>
         </div>
 
-        <p className="mt-3 text-xs text-slate-500">{totalResultLine ?? rateNote(rateStatus, officialRate)}</p>
+        <p className="mt-3 text-xs text-slate-400">{totalResultLine ?? rateNote(rateStatus, officialRate)}</p>
       </div>
 
-      <div className="border-t border-slate-100 pt-4">
+      <div className="border-t border-slate-800 pt-4">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-slate-700">חישוב לפי כמות ועלות ליחידה</h2>
-          <button onClick={resetPerUnit} className="text-xs text-slate-400 hover:text-slate-600">
+          <h2 className="text-sm font-semibold text-slate-200">חישוב לפי כמות ועלות ליחידה</h2>
+          <button onClick={resetPerUnit} className="text-xs text-slate-500 hover:text-slate-300">
             נקה
           </button>
         </div>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <label className="flex flex-col gap-1 text-xs text-slate-500">
+          <label className="flex flex-col gap-1 text-xs text-slate-400">
             כמות יחידות
             <input
               type="number"
               placeholder="0"
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
-              className="rounded border border-slate-300 px-3 py-2 text-sm text-slate-900"
+              className="rounded border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm text-slate-100"
             />
           </label>
-          <label className="flex flex-col gap-1 text-xs text-slate-500">
+          <label className="flex flex-col gap-1 text-xs text-slate-400">
             עלות ליחידה ($)
             <input
               type="number"
               placeholder="0.00"
               value={usdPerUnit}
               onChange={(e) => setUsdPerUnit(e.target.value)}
-              className="rounded border border-slate-300 px-3 py-2 text-sm text-slate-900"
+              className="rounded border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm text-slate-100"
             />
           </label>
-          <label className="flex flex-col gap-1 text-xs text-slate-500">
+          <label className="flex flex-col gap-1 text-xs text-slate-400">
             עלות ליחידה (₪)
             <input
               type="number"
               placeholder="0.00"
               value={ilsPerUnit}
               onChange={(e) => setIlsPerUnit(e.target.value)}
-              className="rounded border border-slate-300 px-3 py-2 text-sm text-slate-900"
+              className="rounded border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm text-slate-100"
             />
           </label>
         </div>
 
-        <p className="mt-3 text-xs text-slate-500">{perUnitRateLine ?? rateNote(rateStatus, officialRate)}</p>
-        {totalLine && <p className="mt-1 text-sm font-semibold text-slate-700">{totalLine}</p>}
+        <p className="mt-3 text-xs text-slate-400">{perUnitRateLine ?? rateNote(rateStatus, officialRate)}</p>
+        {totalLine && <p className="mt-1 text-sm font-semibold text-slate-200">{totalLine}</p>}
       </div>
     </div>
   )

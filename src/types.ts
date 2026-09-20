@@ -28,6 +28,8 @@ export interface Product {
   purchaseCurrency: Currency
   targetProfitPercent: number
   status: ProductStatus
+  hasArrived: boolean
+  expectedArrivalDate: string
   expenses: Expense[]
   sales: Sale[]
   notes: string
