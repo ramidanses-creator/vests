@@ -5,9 +5,10 @@ interface Props {
   expenses: Expense[]
   onChange: (expenses: Expense[]) => void
   usdToIlsRate: number | null
+  disabled?: boolean
 }
 
-export function ExpensesList({ expenses, onChange, usdToIlsRate }: Props) {
+export function ExpensesList({ expenses, onChange, usdToIlsRate, disabled }: Props) {
   function updateExpense(id: string, patch: Partial<Expense>) {
     onChange(expenses.map((e) => (e.id === id ? { ...e, ...patch } : e)))
   }
@@ -26,7 +27,8 @@ export function ExpensesList({ expenses, onChange, usdToIlsRate }: Props) {
         <h3 className="text-sm font-semibold text-slate-700">הוצאות עד הגעה לארץ</h3>
         <button
           onClick={addExpense}
-          className="rounded-full border border-dashed border-slate-400 px-3 py-1 text-xs text-slate-500 hover:bg-slate-50"
+          disabled={disabled}
+          className="rounded-full border border-dashed border-slate-400 px-3 py-1 text-xs text-slate-500 hover:bg-slate-50 disabled:opacity-40"
         >
           + הוצאה
         </button>
@@ -39,33 +41,38 @@ export function ExpensesList({ expenses, onChange, usdToIlsRate }: Props) {
                 type="text"
                 placeholder="תיאור ההוצאה (למשל: משלוח, מכס)"
                 value={expense.label}
+                disabled={disabled}
                 onChange={(e) => updateExpense(expense.id, { label: e.target.value })}
-                className="flex-1 rounded border border-slate-300 px-2 py-1.5 text-sm"
+                className="flex-1 rounded border border-slate-300 px-2 py-1.5 text-sm disabled:bg-slate-100 disabled:text-slate-400"
               />
               <input
                 type="number"
                 placeholder="סכום"
                 value={expense.amount === 0 ? '' : expense.amount}
+                disabled={disabled}
                 onChange={(e) => updateExpense(expense.id, { amount: Number(e.target.value) || 0 })}
-                className="w-24 rounded border border-slate-300 px-2 py-1.5 text-sm"
+                className="w-24 rounded border border-slate-300 px-2 py-1.5 text-sm disabled:bg-slate-100 disabled:text-slate-400"
               />
               <div className="flex overflow-hidden rounded border border-slate-300 text-xs">
                 <button
                   onClick={() => updateExpense(expense.id, { currency: 'ILS' })}
-                  className={`px-2 py-1.5 ${expense.currency === 'ILS' ? 'bg-slate-700 text-white' : 'bg-white text-slate-500'}`}
+                  disabled={disabled}
+                  className={`px-2 py-1.5 disabled:opacity-40 ${expense.currency === 'ILS' ? 'bg-slate-700 text-white' : 'bg-white text-slate-500'}`}
                 >
                   ₪
                 </button>
                 <button
                   onClick={() => updateExpense(expense.id, { currency: 'USD' })}
-                  className={`px-2 py-1.5 ${expense.currency === 'USD' ? 'bg-slate-700 text-white' : 'bg-white text-slate-500'}`}
+                  disabled={disabled}
+                  className={`px-2 py-1.5 disabled:opacity-40 ${expense.currency === 'USD' ? 'bg-slate-700 text-white' : 'bg-white text-slate-500'}`}
                 >
                   $
                 </button>
               </div>
               <button
                 onClick={() => removeExpense(expense.id)}
-                className="rounded border border-slate-200 px-2 py-1.5 text-xs text-red-500 hover:bg-red-50"
+                disabled={disabled}
+                className="rounded border border-slate-200 px-2 py-1.5 text-xs text-red-500 hover:bg-red-50 disabled:opacity-40"
               >
                 מחק
               </button>
