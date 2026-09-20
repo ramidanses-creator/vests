@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { ChatEntry } from './components/ChatEntry'
 import { CurrencyConverter } from './components/CurrencyConverter'
 import { InventoryByCategory } from './components/InventoryByCategory'
 import { ProductCard } from './components/ProductCard'
@@ -70,6 +71,7 @@ export default function App() {
     return stored.length > 0 ? stored : [createDefaultProduct()]
   })
   const [tab, setTab] = useState<ProductStatus>('active')
+  const [chatOpen, setChatOpen] = useState(false)
   const { officialRate } = useOfficialRate()
 
   useEffect(() => {
@@ -130,6 +132,20 @@ export default function App() {
         <SummaryPanel products={products} usdToIlsRate={officialRate} />
         <InventoryByCategory products={products} usdToIlsRate={officialRate} />
         <CurrencyConverter />
+
+        {chatOpen ? (
+          <ChatEntry
+            onCreate={(product) => setProducts((prev) => [...prev, product])}
+            onClose={() => setChatOpen(false)}
+          />
+        ) : (
+          <button
+            onClick={() => setChatOpen(true)}
+            className="rounded-lg border border-indigo-800 bg-indigo-950/30 px-4 py-3 text-sm text-indigo-300 hover:bg-indigo-950/50"
+          >
+            💬 הוספת מוצר בצ׳אט
+          </button>
+        )}
 
         <div className="flex flex-wrap gap-2">
           <button
