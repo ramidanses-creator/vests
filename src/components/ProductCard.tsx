@@ -26,6 +26,7 @@ export function ProductCard({
 }: Props) {
   const [expanded, setExpanded] = useState(defaultExpanded ?? false)
   const [salePriceDraft, setSalePriceDraft] = useState<string | null>(null)
+  const [profitPercentDraft, setProfitPercentDraft] = useState<string | null>(null)
   const totals = calculateProductTotals(product, usdToIlsRate)
   const effectiveRate = product.usdRateOverride ?? usdToIlsRate
   const inSystem = product.status === 'standby'
@@ -177,8 +178,20 @@ export function ProductCard({
                 <input
                   type="text"
                   inputMode="decimal"
-                  value={product.targetProfitPercent === 0 ? '' : product.targetProfitPercent}
-                  onChange={(e) => onChange({ ...product, targetProfitPercent: Number(e.target.value) || 0 })}
+                  value={
+                    profitPercentDraft ??
+                    (product.targetProfitPercent === 0 ? '' : Number(product.targetProfitPercent.toFixed(1)))
+                  }
+                  onFocus={() =>
+                    setProfitPercentDraft(
+                      product.targetProfitPercent === 0 ? '' : String(Number(product.targetProfitPercent.toFixed(1))),
+                    )
+                  }
+                  onChange={(e) => {
+                    setProfitPercentDraft(e.target.value)
+                    onChange({ ...product, targetProfitPercent: Number(e.target.value) || 0 })
+                  }}
+                  onBlur={() => setProfitPercentDraft(null)}
                   className="rounded border border-slate-700 bg-slate-950/60 px-2 py-1.5 text-sm text-slate-100"
                 />
               </label>
