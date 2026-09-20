@@ -13,7 +13,7 @@ export function InventoryByCategory({ products, usdToIlsRate }: Props) {
     const category = product.category.trim() || 'ללא קטגוריה'
     const totals = calculateProductTotals(product, usdToIlsRate)
     const entry = byCategory.get(category) ?? { imported: 0, remaining: 0 }
-    entry.imported += product.quantityImported
+    entry.imported += totals.quantityImported
     entry.remaining += totals.quantityRemaining
     byCategory.set(category, entry)
   })

@@ -8,18 +8,20 @@ export function amountInIls(amount: number, currency: Currency, usdToIlsRate: nu
 
 export const expenseAmountInIls = amountInIls
 
-export function calculateProductTotals(product: Product, usdToIlsRate: number | null): ProductTotals {
-  const purchaseTotal = amountInIls(
-    product.quantityImported * product.purchasePricePerUnit,
-    product.purchaseCurrency,
-    usdToIlsRate,
-  )
+export function calculateProductTotals(product: Product, fallbackUsdToIlsRate: number | null): ProductTotals {
+  const usdToIlsRate = product.usdRateOverride ?? fallbackUsdToIlsRate
+
+  const quantityImported = product.shipments.reduce((sum, s) => sum + s.quantity, 0)
+  const quantityArrived = product.shipments.reduce((sum, s) => sum + (s.arrived ? s.quantity : 0), 0)
+  const quantityPending = Math.max(0, quantityImported - quantityArrived)
+
+  const purchaseTotal = amountInIls(quantityImported * product.purchasePricePerUnit, product.purchaseCurrency, usdToIlsRate)
   const otherExpenses = product.expenses.reduce(
     (sum, e) => sum + amountInIls(e.amount, e.currency, usdToIlsRate),
     0,
   )
   const totalCost = purchaseTotal + otherExpenses
-  const costPerUnit = product.quantityImported > 0 ? totalCost / product.quantityImported : 0
+  const costPerUnit = quantityImported > 0 ? totalCost / quantityImported : 0
   const suggestedSalePrice = costPerUnit * (1 + product.targetProfitPercent / 100)
 
   const quantitySold = product.sales.reduce((sum, s) => sum + s.quantity, 0)
@@ -27,9 +29,12 @@ export function calculateProductTotals(product: Product, usdToIlsRate: number | 
   const totalCostOfSold = quantitySold * costPerUnit
   const totalProfit = totalRevenue - totalCostOfSold
   const profitPerUnit = quantitySold > 0 ? totalProfit / quantitySold : 0
-  const quantityRemaining = product.quantityImported - quantitySold
+  const quantityRemaining = quantityArrived - quantitySold
 
   return {
+    quantityImported,
+    quantityArrived,
+    quantityPending,
     purchaseTotal,
     totalCost,
     costPerUnit,
@@ -40,6 +45,23 @@ export function calculateProductTotals(product: Product, usdToIlsRate: number | 
     totalProfit,
     profitPerUnit,
   }
+}
+
+export function groupExpensesByLabel(
+  expenses: Product['expenses'],
+  usdToIlsRate: number | null,
+): { label: string; total: number; count: number }[] {
+  const map = new Map<string, { total: number; count: number }>()
+  expenses.forEach((e) => {
+    const key = e.label.trim() || 'ללא תיאור'
+    const entry = map.get(key) ?? { total: 0, count: 0 }
+    entry.total += amountInIls(e.amount, e.currency, usdToIlsRate)
+    entry.count += 1
+    map.set(key, entry)
+  })
+  return Array.from(map.entries())
+    .filter(([, v]) => v.count > 1)
+    .map(([label, v]) => ({ label, total: v.total, count: v.count }))
 }
 
 export function formatCurrency(value: number): string {

@@ -2,6 +2,7 @@ import type { Product } from '../types'
 import { calculateProductTotals, formatCurrency } from '../utils/calculations'
 import { ExpensesList } from './ExpensesList'
 import { SalesList } from './SalesList'
+import { ShipmentsList } from './ShipmentsList'
 
 interface Props {
   product: Product
@@ -13,22 +14,18 @@ interface Props {
 
 export function ProductCard({ product, onChange, onRemove, usdToIlsRate, categoryOptions }: Props) {
   const totals = calculateProductTotals(product, usdToIlsRate)
+  const effectiveRate = product.usdRateOverride ?? usdToIlsRate
   const inSystem = product.status === 'standby'
 
   function toggleStatus() {
     onChange({ ...product, status: inSystem ? 'active' : 'standby' })
   }
 
-  function toggleArrived() {
-    onChange({ ...product, hasArrived: !product.hasArrived })
-  }
-
   return (
     <div className={`rounded-xl border p-4 shadow-lg shadow-black/20 ${inSystem ? 'border-sky-800 bg-sky-950/20' : 'border-slate-800 bg-slate-900'}`}>
-      {!product.hasArrived && (
+      {totals.quantityPending > 0 && (
         <div className="mb-3 flex flex-wrap items-center gap-2 rounded-md border border-amber-800 bg-amber-950/30 px-3 py-2 text-sm text-amber-300">
-          <span>🚚 טרם הגיע לארץ</span>
-          {product.expectedArrivalDate && <span>· צפי הגעה: {product.expectedArrivalDate}</span>}
+          <span>🚚 ממתין להגעה: {totals.quantityPending} יחידות</span>
         </div>
       )}
 
@@ -51,27 +48,6 @@ export function ProductCard({ product, onChange, onRemove, usdToIlsRate, categor
           />
         </div>
         <div className="flex flex-wrap gap-2">
-          <button
-            onClick={toggleArrived}
-            className={`whitespace-nowrap rounded border px-3 py-2 text-xs ${
-              product.hasArrived
-                ? 'border-emerald-800 bg-emerald-950/30 text-emerald-300 hover:bg-emerald-950/50'
-                : 'border-amber-800 bg-amber-950/30 text-amber-300 hover:bg-amber-950/50'
-            }`}
-          >
-            {product.hasArrived ? '✓ הגיע לארץ' : 'טרם הגיע — סמנו כשהגיע'}
-          </button>
-          {!product.hasArrived && (
-            <label className="flex items-center gap-2 rounded border border-slate-700 bg-slate-950/60 px-3 py-2 text-xs text-slate-400">
-              צפי הגעה
-              <input
-                type="date"
-                value={product.expectedArrivalDate}
-                onChange={(e) => onChange({ ...product, expectedArrivalDate: e.target.value })}
-                className="bg-transparent text-slate-100"
-              />
-            </label>
-          )}
           <button
             onClick={toggleStatus}
             className={`whitespace-nowrap rounded border px-3 py-2 text-xs ${
@@ -99,16 +75,6 @@ export function ProductCard({ product, onChange, onRemove, usdToIlsRate, categor
 
       <div className="mb-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
         <label className="flex flex-col gap-1 text-xs text-slate-400">
-          כמות שיובאה
-          <input
-            type="number"
-            min={0}
-            value={product.quantityImported === 0 ? '' : product.quantityImported}
-            onChange={(e) => onChange({ ...product, quantityImported: Number(e.target.value) || 0 })}
-            className="rounded border border-slate-700 bg-slate-950/60 px-2 py-1.5 text-sm text-slate-100"
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-slate-400">
           מחיר רכישה ליחידה
           <div className="flex items-center gap-1">
             <input
@@ -134,6 +100,27 @@ export function ProductCard({ product, onChange, onRemove, usdToIlsRate, categor
             </div>
           </div>
         </label>
+        <label className="flex flex-col gap-1 text-xs text-slate-400">
+          שער דולר נעול למוצר
+          <div className="flex items-center gap-1">
+            <input
+              type="number"
+              step="0.0001"
+              placeholder={usdToIlsRate ? usdToIlsRate.toFixed(4) : '—'}
+              value={product.usdRateOverride ?? ''}
+              onChange={(e) => onChange({ ...product, usdRateOverride: e.target.value ? Number(e.target.value) : null })}
+              className="w-full rounded border border-slate-700 bg-slate-950/60 px-2 py-1.5 text-sm text-slate-100"
+            />
+            {usdToIlsRate && (
+              <button
+                onClick={() => onChange({ ...product, usdRateOverride: usdToIlsRate })}
+                className="whitespace-nowrap rounded border border-slate-700 px-2 py-1.5 text-xs text-slate-400 hover:bg-slate-800"
+              >
+                שער נוכחי
+              </button>
+            )}
+          </div>
+        </label>
         <div className="flex flex-col gap-1 text-xs text-slate-400">
           סה״כ עלות רכישה
           <div className="rounded border border-slate-700 bg-slate-800/60 px-2 py-1.5 text-sm font-semibold text-slate-100">
@@ -152,7 +139,9 @@ export function ProductCard({ product, onChange, onRemove, usdToIlsRate, categor
         </label>
       </div>
 
-      <div className="mb-4 rounded-md border border-emerald-900 bg-emerald-950/20 p-3 text-sm">
+      <ShipmentsList shipments={product.shipments} onChange={(shipments) => onChange({ ...product, shipments })} />
+
+      <div className="mb-4 mt-4 rounded-md border border-emerald-900 bg-emerald-950/20 p-3 text-sm">
         <span className="text-emerald-300">
           כדי להרוויח <strong>{product.targetProfitPercent}%</strong> על העלות, מחיר המכירה המומלץ ליחידה הוא{' '}
           <strong>{formatCurrency(totals.suggestedSalePrice)}</strong>
@@ -163,7 +152,7 @@ export function ProductCard({ product, onChange, onRemove, usdToIlsRate, categor
         <ExpensesList
           expenses={product.expenses}
           onChange={(expenses) => onChange({ ...product, expenses })}
-          usdToIlsRate={usdToIlsRate}
+          usdToIlsRate={effectiveRate}
         />
         <SalesList sales={product.sales} onChange={(sales) => onChange({ ...product, sales })} />
       </div>
@@ -179,7 +168,7 @@ export function ProductCard({ product, onChange, onRemove, usdToIlsRate, categor
       <div className="mt-4 grid grid-cols-2 gap-3 rounded-md bg-slate-800/60 p-3 text-sm sm:grid-cols-4">
         <Stat label="סה״כ עלות ייבוא" value={formatCurrency(totals.totalCost)} />
         <Stat label="עלות ליחידה" value={formatCurrency(totals.costPerUnit)} />
-        <Stat label="נמכרו / נותרו" value={`${totals.quantitySold} / ${totals.quantityRemaining}`} />
+        <Stat label="נמכרו / במלאי" value={`${totals.quantitySold} / ${totals.quantityRemaining}`} />
         <Stat label="סה״כ הכנסות" value={formatCurrency(totals.totalRevenue)} />
         <Stat
           label="רווח כולל"

@@ -1,5 +1,5 @@
 import type { Expense } from '../types'
-import { expenseAmountInIls, formatCurrency } from '../utils/calculations'
+import { expenseAmountInIls, formatCurrency, groupExpensesByLabel } from '../utils/calculations'
 
 interface Props {
   expenses: Expense[]
@@ -8,6 +8,8 @@ interface Props {
 }
 
 export function ExpensesList({ expenses, onChange, usdToIlsRate }: Props) {
+  const duplicateGroups = groupExpensesByLabel(expenses, usdToIlsRate)
+
   function updateExpense(id: string, patch: Partial<Expense>) {
     onChange(expenses.map((e) => (e.id === id ? { ...e, ...patch } : e)))
   }
@@ -81,6 +83,17 @@ export function ExpensesList({ expenses, onChange, usdToIlsRate }: Props) {
         ))}
         {expenses.length === 0 && <p className="text-xs text-slate-500">אין הוצאות עדיין.</p>}
       </div>
+      {duplicateGroups.length > 0 && (
+        <p className="text-xs text-slate-400">
+          יש כמה שורות עם אותו תיאור — הן מתחברות אוטומטית לסיכום:{' '}
+          {duplicateGroups.map((g, i) => (
+            <span key={g.label}>
+              {i > 0 ? ', ' : ''}
+              {g.label} ({g.count}×): <span className="font-semibold text-slate-200">{formatCurrency(g.total)}</span>
+            </span>
+          ))}
+        </p>
+      )}
     </div>
   )
 }

@@ -5,6 +5,7 @@ import type { Currency, Product } from '../types'
 interface Props {
   onCreate: (product: Product) => void
   onClose: () => void
+  usdRateOverride: number | null
 }
 
 interface Message {
@@ -44,7 +45,7 @@ function parseAmount(text: string): { amount: number; currency: Currency } {
   return { amount, currency }
 }
 
-export function ChatEntry({ onCreate, onClose }: Props) {
+export function ChatEntry({ onCreate, onClose, usdRateOverride }: Props) {
   const [messages, setMessages] = useState<Message[]>([{ from: 'bot', text: STEPS[0].question }])
   const [stepIndex, setStepIndex] = useState(0)
   const [input, setInput] = useState('')
@@ -59,14 +60,16 @@ export function ChatEntry({ onCreate, onClose }: Props) {
   function finish() {
     const a = answersRef.current
     const product: Product = {
-      ...createDefaultProduct(),
+      ...createDefaultProduct(usdRateOverride),
       name: a.name ?? '',
       category: a.category ?? '',
-      quantityImported: a.quantityImported ?? 0,
       purchasePricePerUnit: a.purchasePricePerUnit ?? 0,
       purchaseCurrency: a.purchaseCurrency ?? 'USD',
       targetProfitPercent: a.targetProfitPercent ?? 20,
     }
+    product.shipments = [
+      { id: crypto.randomUUID(), quantity: a.quantityImported ?? 0, arrived: true, expectedDate: '' },
+    ]
     if ((a.shippingAmount ?? 0) > 0) {
       product.expenses.push({
         id: crypto.randomUUID(),

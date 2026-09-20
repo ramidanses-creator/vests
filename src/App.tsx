@@ -1,15 +1,19 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { ChatEntry } from './components/ChatEntry'
 import { CurrencyConverter } from './components/CurrencyConverter'
 import { InventoryByCategory } from './components/InventoryByCategory'
+import { InventoryPage } from './components/InventoryPage'
 import { ProductCard } from './components/ProductCard'
 import { SummaryPanel } from './components/SummaryPanel'
 import { createDefaultProduct } from './defaultProduct'
 import { useOfficialRate } from './hooks/useOfficialRate'
-import { PRODUCT_STATUS_LABELS, type Product, type ProductStatus } from './types'
+import { PRODUCT_STATUS_LABELS, type Product } from './types'
 
 const STORAGE_KEY = 'import-tracker-products'
 const SEEN_REMOTE_IDS_KEY = 'import-tracker-seen-remote-ids'
+
+type View = 'active' | 'standby' | 'inventory'
+const VIEW_ORDER: View[] = ['active', 'standby', 'inventory']
 
 function loadSeenRemoteIds(): Set<string> {
   try {
@@ -29,18 +33,30 @@ function saveSeenRemoteIds(ids: Set<string>) {
   }
 }
 
-function normalizeProduct(raw: Partial<Product>): Product {
+function normalizeProduct(raw: Partial<Product> & { quantityImported?: number; hasArrived?: boolean; expectedArrivalDate?: string }): Product {
   const fallback = createDefaultProduct()
+  const shipments =
+    raw.shipments ??
+    (raw.quantityImported !== undefined
+      ? [
+          {
+            id: crypto.randomUUID(),
+            quantity: raw.quantityImported,
+            arrived: raw.hasArrived ?? true,
+            expectedDate: raw.expectedArrivalDate ?? '',
+          },
+        ]
+      : fallback.shipments)
   return {
     ...fallback,
     ...raw,
     category: raw.category ?? fallback.category,
     purchasePricePerUnit: raw.purchasePricePerUnit ?? fallback.purchasePricePerUnit,
     purchaseCurrency: raw.purchaseCurrency ?? fallback.purchaseCurrency,
+    usdRateOverride: raw.usdRateOverride ?? null,
     targetProfitPercent: raw.targetProfitPercent ?? fallback.targetProfitPercent,
     status: raw.status ?? fallback.status,
-    hasArrived: raw.hasArrived ?? fallback.hasArrived,
-    expectedArrivalDate: raw.expectedArrivalDate ?? fallback.expectedArrivalDate,
+    shipments,
     expenses: raw.expenses ?? fallback.expenses,
     sales: raw.sales ?? fallback.sales,
   }
@@ -70,9 +86,10 @@ export default function App() {
     const stored = loadProducts()
     return stored.length > 0 ? stored : [createDefaultProduct()]
   })
-  const [tab, setTab] = useState<ProductStatus>('active')
+  const [view, setView] = useState<View>('active')
   const [chatOpen, setChatOpen] = useState(false)
   const { officialRate } = useOfficialRate()
+  const touchStartX = useRef<number | null>(null)
 
   useEffect(() => {
     saveProducts(products)
@@ -98,24 +115,54 @@ export default function App() {
       })
   }, [])
 
+  // Lock in the USD rate for any product that doesn't have one yet, once a live rate is available.
+  useEffect(() => {
+    if (officialRate === null) return
+    setProducts((prev) => {
+      if (!prev.some((p) => p.usdRateOverride === null)) return prev
+      return prev.map((p) => (p.usdRateOverride === null ? { ...p, usdRateOverride: officialRate } : p))
+    })
+  }, [officialRate])
+
   function updateProduct(updated: Product) {
     setProducts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)))
   }
 
   function addProduct() {
-    setProducts((prev) => [...prev, createDefaultProduct()])
+    setProducts((prev) => [...prev, createDefaultProduct(officialRate)])
   }
 
   function removeProduct(id: string) {
     setProducts((prev) => prev.filter((p) => p.id !== id))
   }
 
-  const visibleProducts = useMemo(() => products.filter((p) => p.status === tab), [products, tab])
+  const visibleProducts = useMemo(
+    () => products.filter((p) => p.status === view),
+    [products, view],
+  )
   const standbyCount = useMemo(() => products.filter((p) => p.status === 'standby').length, [products])
   const categoryOptions = useMemo(
     () => Array.from(new Set(products.map((p) => p.category.trim()).filter(Boolean))).sort((a, b) => a.localeCompare(b, 'he')),
     [products],
   )
+
+  function switchView(direction: 1 | -1) {
+    const idx = VIEW_ORDER.indexOf(view)
+    const next = VIEW_ORDER[(idx + direction + VIEW_ORDER.length) % VIEW_ORDER.length]
+    setView(next)
+  }
+
+  function handleTouchStart(e: React.TouchEvent) {
+    touchStartX.current = e.touches[0].clientX
+  }
+
+  function handleTouchEnd(e: React.TouchEvent) {
+    if (touchStartX.current === null) return
+    const delta = e.changedTouches[0].clientX - touchStartX.current
+    touchStartX.current = null
+    if (Math.abs(delta) < 60) return
+    switchView(delta < 0 ? 1 : -1)
+  }
 
   return (
     <div className="min-h-screen bg-slate-950 pb-16" dir="rtl">
@@ -137,6 +184,7 @@ export default function App() {
           <ChatEntry
             onCreate={(product) => setProducts((prev) => [...prev, product])}
             onClose={() => setChatOpen(false)}
+            usdRateOverride={officialRate}
           />
         ) : (
           <button
@@ -149,48 +197,64 @@ export default function App() {
 
         <div className="flex flex-wrap gap-2">
           <button
-            onClick={() => setTab('active')}
+            onClick={() => setView('active')}
             className={`rounded-full border px-4 py-1.5 text-sm ${
-              tab === 'active' ? 'border-indigo-500 bg-indigo-600 text-white' : 'border-slate-700 bg-slate-900 text-slate-300 hover:bg-slate-800'
+              view === 'active' ? 'border-indigo-500 bg-indigo-600 text-white' : 'border-slate-700 bg-slate-900 text-slate-300 hover:bg-slate-800'
             }`}
           >
             {PRODUCT_STATUS_LABELS.active}
           </button>
           <button
-            onClick={() => setTab('standby')}
+            onClick={() => setView('standby')}
             className={`rounded-full border px-4 py-1.5 text-sm ${
-              tab === 'standby' ? 'border-sky-500 bg-sky-600 text-white' : 'border-slate-700 bg-slate-900 text-slate-300 hover:bg-slate-800'
+              view === 'standby' ? 'border-sky-500 bg-sky-600 text-white' : 'border-slate-700 bg-slate-900 text-slate-300 hover:bg-slate-800'
             }`}
           >
             {PRODUCT_STATUS_LABELS.standby} {standbyCount > 0 ? `(${standbyCount})` : ''}
           </button>
+          <button
+            onClick={() => setView('inventory')}
+            className={`rounded-full border px-4 py-1.5 text-sm ${
+              view === 'inventory' ? 'border-emerald-500 bg-emerald-600 text-white' : 'border-slate-700 bg-slate-900 text-slate-300 hover:bg-slate-800'
+            }`}
+          >
+            ניהול מלאי
+          </button>
         </div>
 
-        {visibleProducts.length === 0 && (
-          <p className="rounded-lg border border-dashed border-slate-700 bg-slate-900 p-6 text-center text-sm text-slate-500">
-            {tab === 'active' ? 'אין מוצרים פעילים כרגע.' : 'אין מוצרים רשומים במערכת כרגע.'}
-          </p>
-        )}
+        <div onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} className="flex flex-col gap-6">
+          {view === 'inventory' ? (
+            <InventoryPage products={products} onChange={updateProduct} usdToIlsRate={officialRate} />
+          ) : (
+            <>
+              {visibleProducts.length === 0 && (
+                <p className="rounded-lg border border-dashed border-slate-700 bg-slate-900 p-6 text-center text-sm text-slate-500">
+                  {view === 'active' ? 'אין מוצרים פעילים כרגע.' : 'אין מוצרים רשומים במערכת כרגע.'}
+                </p>
+              )}
 
-        {visibleProducts.map((product) => (
-          <ProductCard
-            key={product.id}
-            product={product}
-            onChange={updateProduct}
-            onRemove={() => removeProduct(product.id)}
-            usdToIlsRate={officialRate}
-            categoryOptions={categoryOptions}
-          />
-        ))}
+              {visibleProducts.map((product) => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  onChange={updateProduct}
+                  onRemove={() => removeProduct(product.id)}
+                  usdToIlsRate={officialRate}
+                  categoryOptions={categoryOptions}
+                />
+              ))}
 
-        {tab === 'active' && (
-          <button
-            onClick={addProduct}
-            className="rounded-lg border border-dashed border-slate-700 bg-slate-900 px-4 py-3 text-sm text-slate-400 hover:bg-slate-800"
-          >
-            + מוצר חדש
-          </button>
-        )}
+              {view === 'active' && (
+                <button
+                  onClick={addProduct}
+                  className="rounded-lg border border-dashed border-slate-700 bg-slate-900 px-4 py-3 text-sm text-slate-400 hover:bg-slate-800"
+                >
+                  + מוצר חדש
+                </button>
+              )}
+            </>
+          )}
+        </div>
       </main>
     </div>
   )

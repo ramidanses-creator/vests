@@ -19,23 +19,32 @@ export interface Sale {
   pricePerUnit: number
 }
 
+export interface Shipment {
+  id: string
+  quantity: number
+  arrived: boolean
+  expectedDate: string
+}
+
 export interface Product {
   id: string
   name: string
   category: string
-  quantityImported: number
   purchasePricePerUnit: number
   purchaseCurrency: Currency
+  usdRateOverride: number | null
   targetProfitPercent: number
   status: ProductStatus
-  hasArrived: boolean
-  expectedArrivalDate: string
+  shipments: Shipment[]
   expenses: Expense[]
   sales: Sale[]
   notes: string
 }
 
 export interface ProductTotals {
+  quantityImported: number
+  quantityArrived: number
+  quantityPending: number
   purchaseTotal: number
   totalCost: number
   costPerUnit: number
