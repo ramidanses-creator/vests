@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { CurrencyConverter } from './components/CurrencyConverter'
 import { ProductCard } from './components/ProductCard'
 import { SummaryPanel } from './components/SummaryPanel'
 import { createDefaultProduct } from './defaultProduct'
@@ -59,6 +60,7 @@ export default function App() {
 
       <main className="mx-auto mt-6 flex max-w-5xl flex-col gap-6 px-4">
         <SummaryPanel products={products} />
+        <CurrencyConverter />
 
         {products.map((product) => (
           <ProductCard
