@@ -2,15 +2,17 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { ChatEntry } from './components/ChatEntry'
 import { CollapsibleSection } from './components/CollapsibleSection'
 import { CurrencyConverter } from './components/CurrencyConverter'
+import { DeletedProducts } from './components/DeletedProducts'
 import { InventoryByCategory } from './components/InventoryByCategory'
 import { InventoryPage } from './components/InventoryPage'
 import { ProductCard } from './components/ProductCard'
 import { SummaryPanel } from './components/SummaryPanel'
 import { createDefaultProduct } from './defaultProduct'
 import { useOfficialRate } from './hooks/useOfficialRate'
-import { PRODUCT_STATUS_LABELS, type Product } from './types'
+import { PRODUCT_STATUS_LABELS, type DeletedProduct, type Product } from './types'
 
 const STORAGE_KEY = 'import-tracker-products'
+const TRASH_KEY = 'import-tracker-deleted-products'
 const SEEN_REMOTE_IDS_KEY = 'import-tracker-seen-remote-ids'
 
 type View = 'active' | 'standby' | 'inventory'
@@ -82,12 +84,33 @@ function saveProducts(products: Product[]) {
   }
 }
 
+function loadDeleted(): DeletedProduct[] {
+  try {
+    const raw = localStorage.getItem(TRASH_KEY)
+    if (!raw) return []
+    const parsed = JSON.parse(raw) as { product: Partial<Product>; deletedAt: string }[]
+    return parsed.map((d) => ({ product: normalizeProduct(d.product), deletedAt: d.deletedAt }))
+  } catch {
+    return []
+  }
+}
+
+function saveDeleted(deleted: DeletedProduct[]) {
+  try {
+    localStorage.setItem(TRASH_KEY, JSON.stringify(deleted))
+  } catch {
+    // ignore storage failures
+  }
+}
+
 export default function App() {
   const [products, setProducts] = useState<Product[]>(() => {
     const stored = loadProducts()
     return stored.length > 0 ? stored : [createDefaultProduct()]
   })
+  const [deleted, setDeleted] = useState<DeletedProduct[]>(() => loadDeleted())
   const [view, setView] = useState<View>('active')
+  const [slideDir, setSlideDir] = useState<'right' | 'left'>('right')
   const [chatOpen, setChatOpen] = useState(false)
   const { officialRate } = useOfficialRate()
   const touchStartX = useRef<number | null>(null)
@@ -95,6 +118,10 @@ export default function App() {
   useEffect(() => {
     saveProducts(products)
   }, [products])
+
+  useEffect(() => {
+    saveDeleted(deleted)
+  }, [deleted])
 
   useEffect(() => {
     fetch('products.json')
@@ -134,7 +161,23 @@ export default function App() {
   }
 
   function removeProduct(id: string) {
+    const target = products.find((p) => p.id === id)
     setProducts((prev) => prev.filter((p) => p.id !== id))
+    if (target) {
+      setDeleted((prev) => [{ product: target, deletedAt: new Date().toISOString() }, ...prev].slice(0, 50))
+    }
+  }
+
+  function restoreProduct(id: string) {
+    const entry = deleted.find((d) => d.product.id === id)
+    setDeleted((prev) => prev.filter((d) => d.product.id !== id))
+    if (entry) {
+      setProducts((prev) => [...prev, entry.product])
+    }
+  }
+
+  function purgeDeleted(id: string) {
+    setDeleted((prev) => prev.filter((d) => d.product.id !== id))
   }
 
   const visibleProducts = useMemo(
@@ -147,10 +190,17 @@ export default function App() {
     [products],
   )
 
+  function goToView(next: View) {
+    const idx = VIEW_ORDER.indexOf(view)
+    const nextIdx = VIEW_ORDER.indexOf(next)
+    setSlideDir(nextIdx >= idx ? 'right' : 'left')
+    setView(next)
+  }
+
   function switchView(direction: 1 | -1) {
     const idx = VIEW_ORDER.indexOf(view)
     const next = VIEW_ORDER[(idx + direction + VIEW_ORDER.length) % VIEW_ORDER.length]
-    setView(next)
+    goToView(next)
   }
 
   function handleTouchStart(e: React.TouchEvent) {
@@ -162,7 +212,8 @@ export default function App() {
     const delta = e.changedTouches[0].clientX - touchStartX.current
     touchStartX.current = null
     if (Math.abs(delta) < 60) return
-    switchView(delta < 0 ? 1 : -1)
+    // Swipe right (finger moves right, delta > 0) goes to the next view, like flipping a page forward.
+    switchView(delta > 0 ? 1 : -1)
   }
 
   return (
@@ -204,7 +255,7 @@ export default function App() {
 
         <div className="flex flex-wrap gap-2">
           <button
-            onClick={() => setView('active')}
+            onClick={() => goToView('active')}
             className={`rounded-full border px-4 py-1.5 text-sm ${
               view === 'active' ? 'border-indigo-500 bg-indigo-600 text-white' : 'border-slate-700 bg-slate-900 text-slate-300 hover:bg-slate-800'
             }`}
@@ -212,7 +263,7 @@ export default function App() {
             {PRODUCT_STATUS_LABELS.active}
           </button>
           <button
-            onClick={() => setView('standby')}
+            onClick={() => goToView('standby')}
             className={`rounded-full border px-4 py-1.5 text-sm ${
               view === 'standby' ? 'border-sky-500 bg-sky-600 text-white' : 'border-slate-700 bg-slate-900 text-slate-300 hover:bg-slate-800'
             }`}
@@ -220,7 +271,7 @@ export default function App() {
             {PRODUCT_STATUS_LABELS.standby} {standbyCount > 0 ? `(${standbyCount})` : ''}
           </button>
           <button
-            onClick={() => setView('inventory')}
+            onClick={() => goToView('inventory')}
             className={`rounded-full border px-4 py-1.5 text-sm ${
               view === 'inventory' ? 'border-emerald-500 bg-emerald-600 text-white' : 'border-slate-700 bg-slate-900 text-slate-300 hover:bg-slate-800'
             }`}
@@ -229,7 +280,8 @@ export default function App() {
           </button>
         </div>
 
-        <div onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} className="flex flex-col gap-6">
+        <div onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} className="overflow-hidden">
+          <div key={view} className={`flex flex-col gap-6 ${slideDir === 'right' ? 'view-slide-right' : 'view-slide-left'}`}>
           {view === 'inventory' ? (
             <InventoryPage products={products} onChange={updateProduct} usdToIlsRate={officialRate} />
           ) : (
@@ -261,7 +313,12 @@ export default function App() {
               )}
             </>
           )}
+          </div>
         </div>
+
+        <CollapsibleSection title="היסטוריית מחיקות" icon="🗑️">
+          <DeletedProducts deleted={deleted} onRestore={restoreProduct} onPurge={purgeDeleted} />
+        </CollapsibleSection>
       </main>
     </div>
   )

@@ -41,6 +41,11 @@ export interface Product {
   notes: string
 }
 
+export interface DeletedProduct {
+  product: Product
+  deletedAt: string
+}
+
 export interface ProductTotals {
   quantityImported: number
   quantityArrived: number
