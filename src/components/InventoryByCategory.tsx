@@ -23,21 +23,18 @@ export function InventoryByCategory({ products, usdToIlsRate }: Props) {
   if (rows.length === 0) return null
 
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-900 p-4 shadow-lg shadow-black/20">
-      <h2 className="mb-3 text-sm font-semibold text-slate-200">בדיקת מלאי לפי קטגוריה</h2>
-      <div className="flex flex-col gap-2">
-        {rows.map(([category, { imported, remaining }]) => (
-          <div
-            key={category}
-            className="flex flex-wrap items-center justify-between gap-1 rounded-md bg-slate-800/60 px-3 py-2 text-sm"
-          >
-            <span className="font-medium text-slate-200">{category}</span>
-            <span className="text-slate-400">
-              במלאי: <span className="font-semibold text-slate-100">{remaining}</span> מתוך {imported}
-            </span>
-          </div>
-        ))}
-      </div>
+    <div className="flex flex-col gap-2">
+      {rows.map(([category, { imported, remaining }]) => (
+        <div
+          key={category}
+          className="flex flex-wrap items-center justify-between gap-1 rounded-md bg-slate-800/60 px-3 py-2 text-sm"
+        >
+          <span className="font-medium text-slate-200">{category}</span>
+          <span className="text-slate-400">
+            במלאי: <span className="font-semibold text-slate-100">{remaining}</span> מתוך {imported}
+          </span>
+        </div>
+      ))}
     </div>
   )
 }

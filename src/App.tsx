@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { ChatEntry } from './components/ChatEntry'
+import { CollapsibleSection } from './components/CollapsibleSection'
 import { CurrencyConverter } from './components/CurrencyConverter'
 import { InventoryByCategory } from './components/InventoryByCategory'
 import { InventoryPage } from './components/InventoryPage'
@@ -177,8 +178,14 @@ export default function App() {
 
       <main className="mx-auto mt-6 flex max-w-5xl flex-col gap-6 px-4">
         <SummaryPanel products={products} usdToIlsRate={officialRate} />
-        <InventoryByCategory products={products} usdToIlsRate={officialRate} />
-        <CurrencyConverter />
+
+        <CollapsibleSection title="בדיקת מלאי לפי קטגוריה" icon="📦">
+          <InventoryByCategory products={products} usdToIlsRate={officialRate} />
+        </CollapsibleSection>
+
+        <CollapsibleSection title="מחשבון המרה דולר / שקל" icon="💱">
+          <CurrencyConverter />
+        </CollapsibleSection>
 
         {chatOpen ? (
           <ChatEntry

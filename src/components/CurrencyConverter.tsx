@@ -74,7 +74,7 @@ export function CurrencyConverter() {
       : null
 
   return (
-    <div className="flex flex-col gap-6 rounded-xl border border-slate-800 bg-slate-900 p-4 shadow-lg shadow-black/20">
+    <div className="flex flex-col gap-6">
       <div>
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-slate-200">מחשבון המרה דולר / שקל</h2>
