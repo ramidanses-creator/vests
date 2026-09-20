@@ -3,6 +3,7 @@ import { CurrencyConverter } from './components/CurrencyConverter'
 import { ProductCard } from './components/ProductCard'
 import { SummaryPanel } from './components/SummaryPanel'
 import { createDefaultProduct } from './defaultProduct'
+import { useOfficialRate } from './hooks/useOfficialRate'
 import type { Product } from './types'
 
 const STORAGE_KEY = 'import-tracker-products'
@@ -30,6 +31,7 @@ export default function App() {
     const stored = loadProducts()
     return stored.length > 0 ? stored : [createDefaultProduct()]
   })
+  const { officialRate } = useOfficialRate()
 
   useEffect(() => {
     saveProducts(products)
@@ -59,7 +61,7 @@ export default function App() {
       </header>
 
       <main className="mx-auto mt-6 flex max-w-5xl flex-col gap-6 px-4">
-        <SummaryPanel products={products} />
+        <SummaryPanel products={products} usdToIlsRate={officialRate} />
         <CurrencyConverter />
 
         {products.map((product) => (
@@ -68,6 +70,7 @@ export default function App() {
             product={product}
             onChange={updateProduct}
             onRemove={() => removeProduct(product.id)}
+            usdToIlsRate={officialRate}
           />
         ))}
 

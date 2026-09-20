@@ -3,10 +3,11 @@ import { calculateProductTotals, formatCurrency } from '../utils/calculations'
 
 interface Props {
   products: Product[]
+  usdToIlsRate: number | null
 }
 
-export function SummaryPanel({ products }: Props) {
-  const totals = products.map((p) => calculateProductTotals(p))
+export function SummaryPanel({ products, usdToIlsRate }: Props) {
+  const totals = products.map((p) => calculateProductTotals(p, usdToIlsRate))
   const totalCost = totals.reduce((sum, t) => sum + t.totalCost, 0)
   const totalRevenue = totals.reduce((sum, t) => sum + t.totalRevenue, 0)
   const totalProfit = totals.reduce((sum, t) => sum + t.totalProfit, 0)

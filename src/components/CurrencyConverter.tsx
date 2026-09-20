@@ -1,35 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import { useOfficialRate, type RateStatus } from '../hooks/useOfficialRate'
 
-function useOfficialRate() {
-  const [officialRate, setOfficialRate] = useState<number | null>(null)
-  const [rateStatus, setRateStatus] = useState<'loading' | 'ok' | 'error'>('loading')
-
-  useEffect(() => {
-    let cancelled = false
-    fetch('https://open.er-api.com/v6/latest/USD')
-      .then((res) => res.json())
-      .then((data) => {
-        if (cancelled) return
-        const rate = data?.rates?.ILS
-        if (typeof rate === 'number') {
-          setOfficialRate(rate)
-          setRateStatus('ok')
-        } else {
-          setRateStatus('error')
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setRateStatus('error')
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
-  return { officialRate, rateStatus }
-}
-
-function rateNote(rateStatus: 'loading' | 'ok' | 'error', officialRate: number | null) {
+function rateNote(rateStatus: RateStatus, officialRate: number | null) {
   if (rateStatus === 'loading') return 'טוען שער יציג...'
   if (rateStatus === 'error') return 'לא ניתן היה לטעון שער יציג עדכני — הזינו סכום כדי לחשב.'
   return `השער היציג הנוכחי: ${officialRate?.toFixed(4)} ₪ לדולר`

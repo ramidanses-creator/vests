@@ -7,10 +7,11 @@ interface Props {
   product: Product
   onChange: (product: Product) => void
   onRemove: () => void
+  usdToIlsRate: number | null
 }
 
-export function ProductCard({ product, onChange, onRemove }: Props) {
-  const totals = calculateProductTotals(product)
+export function ProductCard({ product, onChange, onRemove, usdToIlsRate }: Props) {
+  const totals = calculateProductTotals(product, usdToIlsRate)
 
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
@@ -46,7 +47,11 @@ export function ProductCard({ product, onChange, onRemove }: Props) {
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <ExpensesList expenses={product.expenses} onChange={(expenses) => onChange({ ...product, expenses })} />
+        <ExpensesList
+          expenses={product.expenses}
+          onChange={(expenses) => onChange({ ...product, expenses })}
+          usdToIlsRate={usdToIlsRate}
+        />
         <SalesList sales={product.sales} onChange={(sales) => onChange({ ...product, sales })} />
       </div>
 

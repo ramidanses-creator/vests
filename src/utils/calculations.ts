@@ -1,7 +1,16 @@
 import type { Product, ProductTotals } from '../types'
 
-export function calculateProductTotals(product: Product): ProductTotals {
-  const totalCost = product.expenses.reduce((sum, e) => sum + (Number.isFinite(e.amount) ? e.amount : 0), 0)
+export function expenseAmountInIls(amount: number, currency: 'ILS' | 'USD', usdToIlsRate: number | null): number {
+  if (!Number.isFinite(amount)) return 0
+  if (currency === 'USD') return amount * (usdToIlsRate ?? 0)
+  return amount
+}
+
+export function calculateProductTotals(product: Product, usdToIlsRate: number | null): ProductTotals {
+  const totalCost = product.expenses.reduce(
+    (sum, e) => sum + expenseAmountInIls(e.amount, e.currency, usdToIlsRate),
+    0,
+  )
   const costPerUnit = product.quantityImported > 0 ? totalCost / product.quantityImported : 0
 
   const quantitySold = product.sales.reduce((sum, s) => sum + s.quantity, 0)

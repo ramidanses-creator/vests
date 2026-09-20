@@ -1,7 +1,10 @@
+export type Currency = 'ILS' | 'USD'
+
 export interface Expense {
   id: string
   label: string
   amount: number
+  currency: Currency
 }
 
 export interface Sale {
