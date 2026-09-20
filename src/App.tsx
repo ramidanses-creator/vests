@@ -187,6 +187,13 @@ export default function App() {
     () => Array.from(new Set(products.map((p) => p.category.trim()).filter(Boolean))).sort((a, b) => a.localeCompare(b, 'he')),
     [products],
   )
+  const expenseLabelOptions = useMemo(
+    () =>
+      Array.from(new Set(products.flatMap((p) => p.expenses.map((e) => e.label.trim())).filter(Boolean))).sort((a, b) =>
+        a.localeCompare(b, 'he'),
+      ),
+    [products],
+  )
 
   function renderViewPanel(index: number) {
     const v = VIEW_ORDER[index]
@@ -209,6 +216,7 @@ export default function App() {
             onRemove={() => removeProduct(product.id)}
             usdToIlsRate={officialRate}
             categoryOptions={categoryOptions}
+            expenseLabelOptions={expenseLabelOptions}
             defaultExpanded={product.id === lastAddedId}
           />
         ))}

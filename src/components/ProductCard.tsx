@@ -11,10 +11,19 @@ interface Props {
   onRemove: () => void
   usdToIlsRate: number | null
   categoryOptions: string[]
+  expenseLabelOptions: string[]
   defaultExpanded?: boolean
 }
 
-export function ProductCard({ product, onChange, onRemove, usdToIlsRate, categoryOptions, defaultExpanded }: Props) {
+export function ProductCard({
+  product,
+  onChange,
+  onRemove,
+  usdToIlsRate,
+  categoryOptions,
+  expenseLabelOptions,
+  defaultExpanded,
+}: Props) {
   const [expanded, setExpanded] = useState(defaultExpanded ?? false)
   const totals = calculateProductTotals(product, usdToIlsRate)
   const effectiveRate = product.usdRateOverride ?? usdToIlsRate
@@ -213,6 +222,8 @@ export function ProductCard({ product, onChange, onRemove, usdToIlsRate, categor
                 expenses={product.expenses}
                 onChange={(expenses) => onChange({ ...product, expenses })}
                 usdToIlsRate={effectiveRate}
+                quantityImported={totals.quantityImported}
+                labelOptions={expenseLabelOptions}
               />
               <SalesList sales={product.sales} onChange={(sales) => onChange({ ...product, sales })} />
             </div>

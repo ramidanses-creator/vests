@@ -6,6 +6,8 @@ interface Props {
   expenses: Expense[]
   onChange: (expenses: Expense[]) => void
   usdToIlsRate: number | null
+  quantityImported: number
+  labelOptions: string[]
 }
 
 interface Group {
@@ -32,7 +34,7 @@ function groupExpenses(expenses: Expense[], usdToIlsRate: number | null): Group[
   })
 }
 
-export function ExpensesList({ expenses, onChange, usdToIlsRate }: Props) {
+export function ExpensesList({ expenses, onChange, usdToIlsRate, quantityImported, labelOptions }: Props) {
   const [openGroups, setOpenGroups] = useState<Set<string>>(new Set())
   const groups = groupExpenses(expenses, usdToIlsRate)
 
@@ -63,6 +65,7 @@ export function ExpensesList({ expenses, onChange, usdToIlsRate }: Props) {
         <div className="flex flex-wrap items-center gap-2">
           <input
             type="text"
+            list="expense-label-options"
             placeholder="תיאור ההוצאה (למשל: משלוח, מכס)"
             value={expense.label}
             onChange={(e) => updateExpense(expense.id, { label: e.target.value })}
@@ -109,6 +112,11 @@ export function ExpensesList({ expenses, onChange, usdToIlsRate }: Props) {
 
   return (
     <div className="flex flex-col gap-2">
+      <datalist id="expense-label-options">
+        {labelOptions.map((l) => (
+          <option key={l} value={l} />
+        ))}
+      </datalist>
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-slate-200">הוצאות עד הגעה לארץ</h3>
         <button
@@ -121,7 +129,14 @@ export function ExpensesList({ expenses, onChange, usdToIlsRate }: Props) {
       <div className="flex flex-col gap-2">
         {groups.map((group) =>
           group.items.length === 1 ? (
-            <ExpenseRow key={group.items[0].id} expense={group.items[0]} />
+            <div key={group.items[0].id} className="flex flex-col gap-1">
+              <ExpenseRow expense={group.items[0]} />
+              {quantityImported > 0 && (
+                <p className="pr-1 text-xs text-slate-500">
+                  {formatCurrency(group.total / quantityImported)} ליחידה
+                </p>
+              )}
+            </div>
           ) : (
             <div key={group.label} className="rounded-md border border-slate-700 bg-slate-800/40">
               <button
@@ -132,7 +147,14 @@ export function ExpensesList({ expenses, onChange, usdToIlsRate }: Props) {
                   {group.label} <span className="text-xs text-slate-500">({group.items.length} שורות)</span>
                 </span>
                 <span className="flex items-center gap-2">
-                  <span className="font-semibold text-slate-100">{formatCurrency(group.total)}</span>
+                  <span className="text-left">
+                    <span className="block font-semibold text-slate-100">{formatCurrency(group.total)}</span>
+                    {quantityImported > 0 && (
+                      <span className="block text-xs text-slate-500">
+                        {formatCurrency(group.total / quantityImported)} ליחידה
+                      </span>
+                    )}
+                  </span>
                   <span className="text-slate-500">{openGroups.has(group.label) ? '︿' : '﹀'}</span>
                 </span>
               </button>
