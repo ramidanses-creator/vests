@@ -16,33 +16,3 @@ input,
 textarea {
   color-scheme: dark;
 }
-
-@keyframes slide-in-from-right {
-  from {
-    transform: translateX(24px);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
-@keyframes slide-in-from-left {
-  from {
-    transform: translateX(-24px);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
-.view-slide-right {
-  animation: slide-in-from-right 0.22s ease-out;
-}
-
-.view-slide-left {
-  animation: slide-in-from-left 0.22s ease-out;
-}

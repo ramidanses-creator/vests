@@ -11,10 +11,11 @@ interface Props {
   onRemove: () => void
   usdToIlsRate: number | null
   categoryOptions: string[]
+  defaultExpanded?: boolean
 }
 
-export function ProductCard({ product, onChange, onRemove, usdToIlsRate, categoryOptions }: Props) {
-  const [expanded, setExpanded] = useState(false)
+export function ProductCard({ product, onChange, onRemove, usdToIlsRate, categoryOptions, defaultExpanded }: Props) {
+  const [expanded, setExpanded] = useState(defaultExpanded ?? false)
   const totals = calculateProductTotals(product, usdToIlsRate)
   const effectiveRate = product.usdRateOverride ?? usdToIlsRate
   const inSystem = product.status === 'standby'
@@ -88,7 +89,7 @@ export function ProductCard({ product, onChange, onRemove, usdToIlsRate, categor
                     : 'border-slate-700 text-slate-300 hover:bg-slate-800'
                 }`}
               >
-                {inSystem ? '✓ רשום במערכת — לחצו להחזיר לפעילים' : 'סמן כרשום במערכת'}
+                {inSystem ? '✓ רשום במערכת — לחצו להחזיר להזמנה חדשה' : 'סמן כרשום במערכת'}
               </button>
               <button
                 onClick={onRemove}

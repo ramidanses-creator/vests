@@ -1,7 +1,7 @@
 export type Currency = 'ILS' | 'USD'
 export type ProductStatus = 'active' | 'standby'
 export const PRODUCT_STATUS_LABELS: Record<ProductStatus, string> = {
-  active: 'פעילים',
+  active: 'הזמנה חדשה',
   standby: 'רשומים במערכת',
 }
 

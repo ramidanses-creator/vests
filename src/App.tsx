@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { ChatEntry } from './components/ChatEntry'
 import { CollapsibleSection } from './components/CollapsibleSection'
 import { CurrencyConverter } from './components/CurrencyConverter'
@@ -7,6 +7,7 @@ import { InventoryByCategory } from './components/InventoryByCategory'
 import { InventoryPage } from './components/InventoryPage'
 import { ProductCard } from './components/ProductCard'
 import { SummaryPanel } from './components/SummaryPanel'
+import { SwipeViews } from './components/SwipeViews'
 import { createDefaultProduct } from './defaultProduct'
 import { useOfficialRate } from './hooks/useOfficialRate'
 import { PRODUCT_STATUS_LABELS, type DeletedProduct, type Product } from './types'
@@ -110,10 +111,9 @@ export default function App() {
   })
   const [deleted, setDeleted] = useState<DeletedProduct[]>(() => loadDeleted())
   const [view, setView] = useState<View>('active')
-  const [slideDir, setSlideDir] = useState<'right' | 'left'>('right')
+  const [lastAddedId, setLastAddedId] = useState<string | null>(null)
   const [chatOpen, setChatOpen] = useState(false)
   const { officialRate } = useOfficialRate()
-  const touchStartX = useRef<number | null>(null)
 
   useEffect(() => {
     saveProducts(products)
@@ -157,7 +157,9 @@ export default function App() {
   }
 
   function addProduct() {
-    setProducts((prev) => [...prev, createDefaultProduct(officialRate)])
+    const product = createDefaultProduct(officialRate)
+    setProducts((prev) => [...prev, product])
+    setLastAddedId(product.id)
   }
 
   function removeProduct(id: string) {
@@ -180,40 +182,46 @@ export default function App() {
     setDeleted((prev) => prev.filter((d) => d.product.id !== id))
   }
 
-  const visibleProducts = useMemo(
-    () => products.filter((p) => p.status === view),
-    [products, view],
-  )
   const standbyCount = useMemo(() => products.filter((p) => p.status === 'standby').length, [products])
   const categoryOptions = useMemo(
     () => Array.from(new Set(products.map((p) => p.category.trim()).filter(Boolean))).sort((a, b) => a.localeCompare(b, 'he')),
     [products],
   )
 
-  function goToView(next: View) {
-    const idx = VIEW_ORDER.indexOf(view)
-    const nextIdx = VIEW_ORDER.indexOf(next)
-    setSlideDir(nextIdx >= idx ? 'right' : 'left')
-    setView(next)
-  }
-
-  function switchView(direction: 1 | -1) {
-    const idx = VIEW_ORDER.indexOf(view)
-    const next = VIEW_ORDER[(idx + direction + VIEW_ORDER.length) % VIEW_ORDER.length]
-    goToView(next)
-  }
-
-  function handleTouchStart(e: React.TouchEvent) {
-    touchStartX.current = e.touches[0].clientX
-  }
-
-  function handleTouchEnd(e: React.TouchEvent) {
-    if (touchStartX.current === null) return
-    const delta = e.changedTouches[0].clientX - touchStartX.current
-    touchStartX.current = null
-    if (Math.abs(delta) < 60) return
-    // Swipe right (finger moves right, delta > 0) goes to the next view, like flipping a page forward.
-    switchView(delta > 0 ? 1 : -1)
+  function renderViewPanel(index: number) {
+    const v = VIEW_ORDER[index]
+    if (v === 'inventory') {
+      return <InventoryPage products={products} onChange={updateProduct} usdToIlsRate={officialRate} />
+    }
+    const list = products.filter((p) => p.status === v)
+    return (
+      <div className="flex flex-col gap-6">
+        {list.length === 0 && (
+          <p className="rounded-lg border border-dashed border-slate-700 bg-slate-900 p-6 text-center text-sm text-slate-500">
+            {v === 'active' ? 'אין מוצרים בהזמנה החדשה כרגע.' : 'אין מוצרים רשומים במערכת כרגע.'}
+          </p>
+        )}
+        {list.map((product) => (
+          <ProductCard
+            key={product.id}
+            product={product}
+            onChange={updateProduct}
+            onRemove={() => removeProduct(product.id)}
+            usdToIlsRate={officialRate}
+            categoryOptions={categoryOptions}
+            defaultExpanded={product.id === lastAddedId}
+          />
+        ))}
+        {v === 'active' && (
+          <button
+            onClick={addProduct}
+            className="rounded-lg border border-dashed border-slate-700 bg-slate-900 px-4 py-3 text-sm text-slate-400 hover:bg-slate-800"
+          >
+            + מוצר חדש
+          </button>
+        )}
+      </div>
+    )
   }
 
   return (
@@ -255,7 +263,7 @@ export default function App() {
 
         <div className="flex flex-wrap gap-2">
           <button
-            onClick={() => goToView('active')}
+            onClick={() => setView('active')}
             className={`rounded-full border px-4 py-1.5 text-sm ${
               view === 'active' ? 'border-indigo-500 bg-indigo-600 text-white' : 'border-slate-700 bg-slate-900 text-slate-300 hover:bg-slate-800'
             }`}
@@ -263,7 +271,7 @@ export default function App() {
             {PRODUCT_STATUS_LABELS.active}
           </button>
           <button
-            onClick={() => goToView('standby')}
+            onClick={() => setView('standby')}
             className={`rounded-full border px-4 py-1.5 text-sm ${
               view === 'standby' ? 'border-sky-500 bg-sky-600 text-white' : 'border-slate-700 bg-slate-900 text-slate-300 hover:bg-slate-800'
             }`}
@@ -271,7 +279,7 @@ export default function App() {
             {PRODUCT_STATUS_LABELS.standby} {standbyCount > 0 ? `(${standbyCount})` : ''}
           </button>
           <button
-            onClick={() => goToView('inventory')}
+            onClick={() => setView('inventory')}
             className={`rounded-full border px-4 py-1.5 text-sm ${
               view === 'inventory' ? 'border-emerald-500 bg-emerald-600 text-white' : 'border-slate-700 bg-slate-900 text-slate-300 hover:bg-slate-800'
             }`}
@@ -280,41 +288,12 @@ export default function App() {
           </button>
         </div>
 
-        <div onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} className="overflow-hidden">
-          <div key={view} className={`flex flex-col gap-6 ${slideDir === 'right' ? 'view-slide-right' : 'view-slide-left'}`}>
-          {view === 'inventory' ? (
-            <InventoryPage products={products} onChange={updateProduct} usdToIlsRate={officialRate} />
-          ) : (
-            <>
-              {visibleProducts.length === 0 && (
-                <p className="rounded-lg border border-dashed border-slate-700 bg-slate-900 p-6 text-center text-sm text-slate-500">
-                  {view === 'active' ? 'אין מוצרים פעילים כרגע.' : 'אין מוצרים רשומים במערכת כרגע.'}
-                </p>
-              )}
-
-              {visibleProducts.map((product) => (
-                <ProductCard
-                  key={product.id}
-                  product={product}
-                  onChange={updateProduct}
-                  onRemove={() => removeProduct(product.id)}
-                  usdToIlsRate={officialRate}
-                  categoryOptions={categoryOptions}
-                />
-              ))}
-
-              {view === 'active' && (
-                <button
-                  onClick={addProduct}
-                  className="rounded-lg border border-dashed border-slate-700 bg-slate-900 px-4 py-3 text-sm text-slate-400 hover:bg-slate-800"
-                >
-                  + מוצר חדש
-                </button>
-              )}
-            </>
-          )}
-          </div>
-        </div>
+        <SwipeViews
+          activeIndex={VIEW_ORDER.indexOf(view)}
+          count={VIEW_ORDER.length}
+          onChange={(i) => setView(VIEW_ORDER[i])}
+          renderPanel={renderViewPanel}
+        />
 
         <CollapsibleSection title="היסטוריית מחיקות" icon="🗑️">
           <DeletedProducts deleted={deleted} onRestore={restoreProduct} onPurge={purgeDeleted} />
