@@ -206,7 +206,7 @@ export function ProductCard({
               </label>
             </div>
             <p className="mt-3 text-sm text-emerald-300">
-              כדי להרוויח <strong>{product.targetProfitPercent}%</strong> על העלות, מחיר המכירה המומלץ ליחידה הוא{' '}
+              כדי להרוויח <strong>~{product.targetProfitPercent.toFixed(1)}%</strong> על העלות, מחיר המכירה המומלץ ליחידה הוא{' '}
               <strong>{formatCurrency(totals.suggestedSalePrice)}</strong>
             </p>
             <div className="mt-3 grid grid-cols-2 gap-3">
