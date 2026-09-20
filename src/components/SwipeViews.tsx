@@ -5,11 +5,13 @@ interface Props {
   count: number
   onChange: (index: number) => void
   renderPanel: (index: number) => ReactNode
+  /** When false, swiping stops at the first/last index instead of wrapping around. */
+  loop?: boolean
 }
 
 const SNAP_MS = 220
 
-export function SwipeViews({ activeIndex, count, onChange, renderPanel }: Props) {
+export function SwipeViews({ activeIndex, count, onChange, renderPanel, loop = true }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [width, setWidth] = useState(0)
   const [dragPx, setDragPx] = useState(0)
@@ -20,6 +22,11 @@ export function SwipeViews({ activeIndex, count, onChange, renderPanel }: Props)
     dx: 0,
     axis: null,
   })
+
+  const hasPrev = loop || activeIndex > 0
+  const hasNext = loop || activeIndex < count - 1
+  const prevIndex = hasPrev ? (activeIndex - 1 + count) % count : activeIndex
+  const nextIndex = hasNext ? (activeIndex + 1) % count : activeIndex
 
   useLayoutEffect(() => {
     const el = containerRef.current
@@ -60,8 +67,12 @@ export function SwipeViews({ activeIndex, count, onChange, renderPanel }: Props)
       }
       if (g.axis === 'x') {
         e.preventDefault()
-        g.dx = dx
-        setDragPx(dx)
+        // Rubber-band: if there's no neighbor on that side, resist the drag instead of moving freely.
+        let nextDx = dx
+        if (dx < 0 && !hasNext) nextDx = dx / 3
+        if (dx > 0 && !hasPrev) nextDx = dx / 3
+        g.dx = nextDx
+        setDragPx(nextDx)
       }
     }
 
@@ -69,9 +80,9 @@ export function SwipeViews({ activeIndex, count, onChange, renderPanel }: Props)
       const g = gesture.current
       if (g.axis === 'x' && width > 0) {
         const threshold = width * 0.22
-        if (g.dx <= -threshold) {
+        if (g.dx <= -threshold && hasNext) {
           snapTo(-width, () => onChange((activeIndex + 1) % count))
-        } else if (g.dx >= threshold) {
+        } else if (g.dx >= threshold && hasPrev) {
           snapTo(width, () => onChange((activeIndex - 1 + count) % count))
         } else {
           snapTo(0)
@@ -88,10 +99,7 @@ export function SwipeViews({ activeIndex, count, onChange, renderPanel }: Props)
       el.removeEventListener('touchmove', onTouchMove)
       el.removeEventListener('touchend', onTouchEnd)
     }
-  }, [activeIndex, count, onChange, width])
-
-  const prevIndex = (activeIndex - 1 + count) % count
-  const nextIndex = (activeIndex + 1) % count
+  }, [activeIndex, count, onChange, width, hasPrev, hasNext])
 
   return (
     <div ref={containerRef} className="overflow-hidden" style={{ touchAction: 'pan-y' }}>
@@ -104,9 +112,9 @@ export function SwipeViews({ activeIndex, count, onChange, renderPanel }: Props)
           transition: transitioning ? `transform ${SNAP_MS}ms ease-out` : 'none',
         }}
       >
-        <div style={{ flex: '0 0 100%', minWidth: 0 }}>{renderPanel(prevIndex)}</div>
+        <div style={{ flex: '0 0 100%', minWidth: 0 }}>{hasPrev ? renderPanel(prevIndex) : null}</div>
         <div style={{ flex: '0 0 100%', minWidth: 0 }}>{renderPanel(activeIndex)}</div>
-        <div style={{ flex: '0 0 100%', minWidth: 0 }}>{renderPanel(nextIndex)}</div>
+        <div style={{ flex: '0 0 100%', minWidth: 0 }}>{hasNext ? renderPanel(nextIndex) : null}</div>
       </div>
     </div>
   )

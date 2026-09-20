@@ -293,6 +293,7 @@ export default function App() {
           count={VIEW_ORDER.length}
           onChange={(i) => setView(VIEW_ORDER[i])}
           renderPanel={renderViewPanel}
+          loop={false}
         />
 
         <CollapsibleSection title="היסטוריית מחיקות" icon="🗑️">
