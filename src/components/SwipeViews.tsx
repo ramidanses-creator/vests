@@ -67,10 +67,10 @@ export function SwipeViews({ activeIndex, count, onChange, renderPanel, loop = t
       }
       if (g.axis === 'x') {
         e.preventDefault()
-        // Rubber-band: if there's no neighbor on that side, resist the drag instead of moving freely.
-        let nextDx = dx
-        if (dx < 0 && !hasNext) nextDx = dx / 3
-        if (dx > 0 && !hasPrev) nextDx = dx / 3
+        // Reversed: dragging left moves to the previous view, dragging right to the next.
+        let nextDx = -dx
+        if (nextDx < 0 && !hasNext) nextDx = nextDx / 3
+        if (nextDx > 0 && !hasPrev) nextDx = nextDx / 3
         g.dx = nextDx
         setDragPx(nextDx)
       }
