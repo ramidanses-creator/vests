@@ -92,7 +92,7 @@ export function CurrencyConverter() {
               placeholder="0.00"
               value={usd}
               onChange={(e) => setUsd(e.target.value)}
-              className="rounded border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm text-slate-100"
+              className="rounded border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-100"
             />
           </label>
           <label className="flex flex-col gap-1 text-xs text-slate-400">
@@ -103,7 +103,7 @@ export function CurrencyConverter() {
               placeholder="0.00"
               value={ils}
               onChange={(e) => setIls(e.target.value)}
-              className="rounded border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm text-slate-100"
+              className="rounded border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-100"
             />
           </label>
         </div>
@@ -111,7 +111,7 @@ export function CurrencyConverter() {
         <p className="mt-3 text-xs text-slate-400">{totalResultLine ?? rateNote(rateStatus, officialRate)}</p>
       </div>
 
-      <div className="border-t border-slate-800 pt-4">
+      <div className="border-t border-white/10 pt-4">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-slate-200">חישוב לפי כמות ועלות ליחידה</h2>
           <button onClick={resetPerUnit} className="text-xs text-slate-500 hover:text-slate-300">
@@ -128,7 +128,7 @@ export function CurrencyConverter() {
               placeholder="0"
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
-              className="rounded border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm text-slate-100"
+              className="rounded border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-100"
             />
           </label>
           <label className="flex flex-col gap-1 text-xs text-slate-400">
@@ -139,7 +139,7 @@ export function CurrencyConverter() {
               placeholder="0.00"
               value={usdPerUnit}
               onChange={(e) => setUsdPerUnit(e.target.value)}
-              className="rounded border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm text-slate-100"
+              className="rounded border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-100"
             />
           </label>
           <label className="flex flex-col gap-1 text-xs text-slate-400">
@@ -150,7 +150,7 @@ export function CurrencyConverter() {
               placeholder="0.00"
               value={ilsPerUnit}
               onChange={(e) => setIlsPerUnit(e.target.value)}
-              className="rounded border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm text-slate-100"
+              className="rounded border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-100"
             />
           </label>
         </div>

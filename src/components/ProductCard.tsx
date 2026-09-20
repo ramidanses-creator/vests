@@ -36,11 +36,10 @@ export function ProductCard({
   }
 
   return (
-    <div className={`rounded-xl border shadow-lg shadow-black/20 ${inSystem ? 'border-sky-800 bg-sky-950/20' : 'border-slate-800 bg-slate-900'}`}>
-      <button
-        onClick={() => setExpanded((v) => !v)}
-        className="flex w-full flex-col gap-2 p-4 text-right"
-      >
+    <div
+      className={`overflow-hidden rounded-2xl border-r-4 bg-white/[0.04] shadow-lg shadow-black/20 ${inSystem ? 'border-violet-500' : 'border-teal-500'}`}
+    >
+      <button onClick={() => setExpanded((v) => !v)} className="flex w-full flex-col gap-2 p-4 text-right">
         <div className="flex items-center gap-2">
           <span className="min-w-0 flex-1 truncate text-base font-semibold text-slate-100">
             {product.name || 'מוצר ללא שם'}
@@ -49,22 +48,20 @@ export function ProductCard({
         </div>
         <div className="flex flex-wrap items-center gap-1.5 text-xs">
           {product.category && (
-            <span className="rounded-full bg-slate-800 px-2 py-0.5 text-slate-300">{product.category}</span>
+            <span className="rounded-full bg-white/10 px-2 py-0.5 text-slate-200">{product.category}</span>
           )}
-          {inSystem && <span className="rounded-full bg-sky-950/50 px-2 py-0.5 text-sky-300">רשום במערכת</span>}
+          {inSystem && <span className="rounded-full bg-violet-500/20 px-2 py-0.5 text-violet-300">רשום במערכת</span>}
           {totals.quantityPending > 0 && (
-            <span className="rounded-full bg-amber-950/50 px-2 py-0.5 text-amber-300">
+            <span className="rounded-full bg-amber-400/20 px-2 py-0.5 text-amber-300">
               🚚 ממתין {totals.quantityPending}
             </span>
           )}
-          <span className="rounded-full bg-slate-800 px-2 py-0.5 text-slate-300">
+          <span className="rounded-full bg-sky-400/15 px-2 py-0.5 text-sky-300">
             עלות/יח׳ {formatCurrency(totals.costPerUnit)}
           </span>
-          <span className="rounded-full bg-slate-800 px-2 py-0.5 text-slate-300">
-            במלאי {totals.quantityRemaining}
-          </span>
+          <span className="rounded-full bg-white/10 px-2 py-0.5 text-slate-200">במלאי {totals.quantityRemaining}</span>
           <span
-            className={`rounded-full px-2 py-0.5 ${totals.totalProfit >= 0 ? 'bg-emerald-950/50 text-emerald-300' : 'bg-red-950/50 text-red-300'}`}
+            className={`rounded-full px-2 py-0.5 font-medium ${totals.totalProfit >= 0 ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'}`}
           >
             רווח {formatCurrency(totals.totalProfit)}
           </span>
@@ -72,7 +69,7 @@ export function ProductCard({
       </button>
 
       {expanded && (
-        <div className="border-t border-slate-800 p-4 pt-4">
+        <div className="border-t border-white/10 p-4 pt-4">
           <div className="mb-4 flex flex-col gap-2">
             <div className="flex flex-col gap-2 sm:flex-row">
               <input
@@ -80,7 +77,7 @@ export function ProductCard({
                 placeholder="שם המוצר"
                 value={product.name}
                 onChange={(e) => onChange({ ...product, name: e.target.value })}
-                className="w-full flex-1 rounded border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm font-semibold text-slate-100"
+                className="w-full flex-1 rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm font-semibold text-slate-100 focus:border-teal-500 focus:outline-none"
               />
               <input
                 type="text"
@@ -88,23 +85,23 @@ export function ProductCard({
                 placeholder="קטגוריה"
                 value={product.category}
                 onChange={(e) => onChange({ ...product, category: e.target.value })}
-                className="w-full rounded border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm text-slate-200 sm:w-40"
+                className="w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 focus:border-teal-500 focus:outline-none sm:w-40"
               />
             </div>
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={toggleStatus}
-                className={`whitespace-nowrap rounded border px-3 py-2 text-xs ${
+                className={`whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-medium ${
                   inSystem
-                    ? 'border-sky-800 bg-sky-950/30 text-sky-300 hover:bg-sky-950/50'
-                    : 'border-slate-700 text-slate-300 hover:bg-slate-800'
+                    ? 'bg-violet-500/20 text-violet-300 hover:bg-violet-500/30'
+                    : 'bg-white/10 text-slate-300 hover:bg-white/15'
                 }`}
               >
                 {inSystem ? '✓ רשום במערכת — לחצו להחזיר להזמנה חדשה' : 'סמן כרשום במערכת'}
               </button>
               <button
                 onClick={onRemove}
-                className="rounded border border-slate-700 px-3 py-2 text-xs text-red-400 hover:bg-red-950/40"
+                className="rounded-full bg-rose-500/10 px-3 py-1.5 text-xs font-medium text-rose-300 hover:bg-rose-500/20"
               >
                 מחק מוצר
               </button>
@@ -117,7 +114,7 @@ export function ProductCard({
             ))}
           </datalist>
 
-          <Section title="עלות ורווח">
+          <Section title="עלות ורווח" dot="bg-amber-400">
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
               <label className="flex flex-col gap-1 text-xs text-slate-400">
                 מחיר רכישה ליחידה
@@ -127,18 +124,18 @@ export function ProductCard({
                     inputMode="decimal"
                     value={product.purchasePricePerUnit === 0 ? '' : product.purchasePricePerUnit}
                     onChange={(e) => onChange({ ...product, purchasePricePerUnit: Number(e.target.value) || 0 })}
-                    className="w-full rounded border border-slate-700 bg-slate-950/60 px-2 py-1.5 text-sm text-slate-100"
+                    className="w-full rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-slate-100 focus:border-teal-500 focus:outline-none"
                   />
-                  <div className="flex overflow-hidden rounded border border-slate-700 text-xs">
+                  <div className="flex overflow-hidden rounded-lg border border-white/10 text-xs">
                     <button
                       onClick={() => onChange({ ...product, purchaseCurrency: 'ILS' })}
-                      className={`px-2 py-1.5 ${product.purchaseCurrency === 'ILS' ? 'bg-indigo-600 text-white' : 'bg-slate-900 text-slate-400'}`}
+                      className={`px-2 py-1.5 ${product.purchaseCurrency === 'ILS' ? 'bg-teal-500 text-slate-950' : 'bg-black/20 text-slate-400'}`}
                     >
                       ₪
                     </button>
                     <button
                       onClick={() => onChange({ ...product, purchaseCurrency: 'USD' })}
-                      className={`px-2 py-1.5 ${product.purchaseCurrency === 'USD' ? 'bg-indigo-600 text-white' : 'bg-slate-900 text-slate-400'}`}
+                      className={`px-2 py-1.5 ${product.purchaseCurrency === 'USD' ? 'bg-teal-500 text-slate-950' : 'bg-black/20 text-slate-400'}`}
                     >
                       $
                     </button>
@@ -155,12 +152,12 @@ export function ProductCard({
                     placeholder={usdToIlsRate ? usdToIlsRate.toFixed(4) : '—'}
                     value={product.usdRateOverride ?? ''}
                     onChange={(e) => onChange({ ...product, usdRateOverride: e.target.value ? Number(e.target.value) : null })}
-                    className="w-full rounded border border-slate-700 bg-slate-950/60 px-2 py-1.5 text-sm text-slate-100"
+                    className="w-full rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-slate-100 focus:border-teal-500 focus:outline-none"
                   />
                   {usdToIlsRate && (
                     <button
                       onClick={() => onChange({ ...product, usdRateOverride: usdToIlsRate })}
-                      className="whitespace-nowrap rounded border border-slate-700 px-2 py-1.5 text-xs text-slate-400 hover:bg-slate-800"
+                      className="whitespace-nowrap rounded-lg bg-white/10 px-2 py-1.5 text-xs text-slate-300 hover:bg-white/15"
                     >
                       שער נוכחי
                     </button>
@@ -169,7 +166,7 @@ export function ProductCard({
               </label>
               <div className="flex flex-col gap-1 text-xs text-slate-400">
                 סה״כ עלות רכישה
-                <div className="rounded border border-slate-700 bg-slate-800/60 px-2 py-1.5 text-sm font-semibold text-slate-100">
+                <div className="rounded-lg bg-amber-400/10 px-2 py-1.5 text-sm font-semibold text-amber-200">
                   {formatCurrency(totals.purchaseTotal)}
                 </div>
               </div>
@@ -192,7 +189,7 @@ export function ProductCard({
                     onChange({ ...product, targetProfitPercent: Number(e.target.value) || 0 })
                   }}
                   onBlur={() => setProfitPercentDraft(null)}
-                  className="rounded border border-slate-700 bg-slate-950/60 px-2 py-1.5 text-sm text-slate-100"
+                  className="rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-slate-100 focus:border-teal-500 focus:outline-none"
                 />
               </label>
               <label className="flex flex-col gap-1 text-xs text-slate-400">
@@ -214,33 +211,33 @@ export function ProductCard({
                     onChange({ ...product, targetProfitPercent: percent })
                   }}
                   onBlur={() => setSalePriceDraft(null)}
-                  className="rounded border border-slate-700 bg-slate-950/60 px-2 py-1.5 text-sm text-slate-100"
+                  className="rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-slate-100 focus:border-teal-500 focus:outline-none"
                 />
               </label>
             </div>
-            <p className="mt-3 text-sm text-emerald-300">
+            <p className="mt-3 rounded-lg bg-teal-500/10 p-3 text-sm text-teal-200">
               כדי להרוויח <strong>~{product.targetProfitPercent.toFixed(1)}%</strong> על העלות, מחיר המכירה המומלץ ליחידה הוא{' '}
               <strong>{formatCurrency(totals.suggestedSalePrice)}</strong>
             </p>
             <div className="mt-3 grid grid-cols-2 gap-3">
-              <div className="rounded-md border border-emerald-900 bg-emerald-950/20 p-3 text-sm">
+              <div className="rounded-lg bg-emerald-500/10 p-3 text-sm">
                 <div className="text-xs text-emerald-400">רווח צפוי (לפי המחיר הרצוי, על כל הכמות)</div>
                 <div className="font-semibold text-emerald-300">{formatCurrency(totals.expectedProfit)}</div>
               </div>
-              <div className="rounded-md border border-slate-700 bg-slate-800/60 p-3 text-sm">
+              <div className="rounded-lg bg-white/5 p-3 text-sm">
                 <div className="text-xs text-slate-400">רווח בפועל (לפי מכירות שנרשמו)</div>
-                <div className={`font-semibold ${totals.totalProfit >= 0 ? 'text-emerald-300' : 'text-red-400'}`}>
+                <div className={`font-semibold ${totals.totalProfit >= 0 ? 'text-emerald-300' : 'text-rose-400'}`}>
                   {formatCurrency(totals.totalProfit)}
                 </div>
               </div>
             </div>
           </Section>
 
-          <Section title="משלוחים / הגעה">
+          <Section title="משלוחים / הגעה" dot="bg-sky-400">
             <ShipmentsList shipments={product.shipments} onChange={(shipments) => onChange({ ...product, shipments })} />
           </Section>
 
-          <Section title="הוצאות ומכירות">
+          <Section title="הוצאות ומכירות" dot="bg-violet-400">
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
               <ExpensesList
                 expenses={product.expenses}
@@ -257,11 +254,11 @@ export function ProductCard({
             placeholder="הערות"
             value={product.notes}
             onChange={(e) => onChange({ ...product, notes: e.target.value })}
-            className="mt-4 w-full rounded border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm text-slate-100"
+            className="mt-4 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-100 focus:border-teal-500 focus:outline-none"
             rows={2}
           />
 
-          <div className="mt-4 grid grid-cols-2 gap-3 rounded-md bg-slate-800/60 p-3 text-sm sm:grid-cols-4">
+          <div className="mt-4 grid grid-cols-2 gap-3 rounded-xl bg-black/20 p-3 text-sm sm:grid-cols-4">
             <Stat label="סה״כ עלות ייבוא" value={formatCurrency(totals.totalCost)} />
             <Stat label="עלות ליחידה" value={formatCurrency(totals.costPerUnit)} />
             <Stat label="נמכרו / במלאי" value={`${totals.quantitySold} / ${totals.quantityRemaining}`} />
@@ -279,10 +276,13 @@ export function ProductCard({
   )
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ title, dot, children }: { title: string; dot: string; children: React.ReactNode }) {
   return (
-    <div className="mb-4 border-t border-slate-800 pt-4 first:mt-0 first:border-t-0 first:pt-0">
-      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">{title}</h3>
+    <div className="mb-4 border-t border-white/10 pt-4 first:mt-0 first:border-t-0 first:pt-0">
+      <h3 className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-400">
+        <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
+        {title}
+      </h3>
       {children}
     </div>
   )
@@ -298,7 +298,7 @@ function Stat({
   highlight?: 'positive' | 'negative'
 }) {
   const color =
-    highlight === 'positive' ? 'text-emerald-400' : highlight === 'negative' ? 'text-red-400' : 'text-slate-100'
+    highlight === 'positive' ? 'text-emerald-400' : highlight === 'negative' ? 'text-rose-400' : 'text-slate-100'
   return (
     <div className="flex flex-col">
       <span className="text-xs text-slate-400">{label}</span>

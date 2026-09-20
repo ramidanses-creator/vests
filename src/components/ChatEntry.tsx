@@ -146,9 +146,9 @@ export function ChatEntry({ onCreate, onClose, usdRateOverride }: Props) {
   }
 
   return (
-    <div className="flex flex-col rounded-xl border border-slate-800 bg-slate-900 shadow-lg shadow-black/20">
-      <div className="flex items-center justify-between border-b border-slate-800 px-4 py-3">
-        <h2 className="text-sm font-semibold text-slate-200">הוספת מוצר בצ׳אט</h2>
+    <div className="flex flex-col overflow-hidden rounded-2xl border-r-4 border-teal-500 bg-white/[0.04] shadow-lg shadow-black/20">
+      <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
+        <h2 className="text-sm font-semibold text-slate-100">הוספת מוצר בצ׳אט</h2>
         <button onClick={onClose} className="text-xs text-slate-500 hover:text-slate-300">
           סגור
         </button>
@@ -159,9 +159,7 @@ export function ChatEntry({ onCreate, onClose, usdRateOverride }: Props) {
           <div
             key={i}
             className={`max-w-[85%] rounded-lg px-3 py-2 text-sm ${
-              m.from === 'bot'
-                ? 'self-start bg-slate-800 text-slate-200'
-                : 'self-end bg-indigo-600 text-white'
+              m.from === 'bot' ? 'self-start bg-white/10 text-slate-200' : 'self-end bg-teal-500 text-slate-950'
             }`}
           >
             {m.text}
@@ -171,19 +169,19 @@ export function ChatEntry({ onCreate, onClose, usdRateOverride }: Props) {
       </div>
 
       {!done && (
-        <div className="flex items-center gap-2 border-t border-slate-800 p-3">
+        <div className="flex items-center gap-2 border-t border-white/10 p-3">
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
             placeholder="הקלידו תשובה..."
-            className="flex-1 rounded border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm text-slate-100"
+            className="flex-1 rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-100 focus:border-teal-500 focus:outline-none"
             autoFocus
           />
           <button
             onClick={handleSend}
-            className="rounded bg-indigo-600 px-4 py-2 text-sm text-white hover:bg-indigo-500"
+            className="rounded-lg bg-teal-500 px-4 py-2 text-sm font-medium text-slate-950 hover:bg-teal-400"
           >
             שלח
           </button>

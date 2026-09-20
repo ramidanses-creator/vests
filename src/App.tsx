@@ -204,7 +204,7 @@ export default function App() {
     return (
       <div className="flex flex-col gap-6">
         {list.length === 0 && (
-          <p className="rounded-lg border border-dashed border-slate-700 bg-slate-900 p-6 text-center text-sm text-slate-500">
+          <p className="rounded-2xl border border-dashed border-white/15 bg-white/[0.03] p-6 text-center text-sm text-slate-400">
             {v === 'active' ? 'אין מוצרים בהזמנה החדשה כרגע.' : 'אין מוצרים רשומים במערכת כרגע.'}
           </p>
         )}
@@ -223,7 +223,7 @@ export default function App() {
         {v === 'active' && (
           <button
             onClick={addProduct}
-            className="rounded-lg border border-dashed border-slate-700 bg-slate-900 px-4 py-3 text-sm text-slate-400 hover:bg-slate-800"
+            className="rounded-2xl border-2 border-dashed border-teal-700/60 bg-teal-950/10 px-4 py-3 text-sm font-medium text-teal-300 hover:bg-teal-950/20"
           >
             + מוצר חדש
           </button>
@@ -233,10 +233,12 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 pb-16" dir="rtl">
-      <header className="sticky top-0 z-10 border-b border-slate-800 bg-slate-950/95 backdrop-blur">
+    <div className="min-h-screen pb-16" dir="rtl">
+      <header className="sticky top-0 z-10 border-b border-white/10 bg-[#0f1117]/90 backdrop-blur">
         <div className="mx-auto flex max-w-5xl flex-col gap-1 px-4 py-4 sm:py-5">
-          <h1 className="text-xl font-bold text-white sm:text-2xl">מעקב הזמנות ורווחים</h1>
+          <h1 className="bg-gradient-to-l from-sky-400 via-violet-400 to-amber-300 bg-clip-text text-xl font-extrabold text-transparent sm:text-2xl">
+            מעקב הזמנות ורווחים
+          </h1>
           <p className="text-sm text-slate-400">
             רשמו לכל מוצר את כל ההוצאות עד הגעתו לארץ ואת המכירות שלו — האפליקציה תחשב עלות ליחידה ורווח בפועל.
           </p>
@@ -246,11 +248,11 @@ export default function App() {
       <main className="mx-auto mt-6 flex max-w-5xl flex-col gap-6 px-4">
         <SummaryPanel products={products} usdToIlsRate={officialRate} />
 
-        <CollapsibleSection title="בדיקת מלאי לפי קטגוריה" icon="📦">
+        <CollapsibleSection title="בדיקת מלאי לפי קטגוריה" icon="📦" accent="violet">
           <InventoryByCategory products={products} usdToIlsRate={officialRate} />
         </CollapsibleSection>
 
-        <CollapsibleSection title="מחשבון המרה דולר / שקל" icon="💱">
+        <CollapsibleSection title="מחשבון המרה דולר / שקל" icon="💱" accent="amber">
           <CurrencyConverter />
         </CollapsibleSection>
 
@@ -263,7 +265,7 @@ export default function App() {
         ) : (
           <button
             onClick={() => setChatOpen(true)}
-            className="rounded-lg border border-indigo-800 bg-indigo-950/30 px-4 py-3 text-sm text-indigo-300 hover:bg-indigo-950/50"
+            className="rounded-2xl border-r-4 border-teal-500 bg-teal-950/30 px-4 py-3 text-sm font-medium text-teal-200 shadow-lg shadow-black/20 hover:bg-teal-950/50"
           >
             💬 הוספת מוצר בצ׳אט
           </button>
@@ -272,24 +274,30 @@ export default function App() {
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setView('active')}
-            className={`rounded-full border px-4 py-1.5 text-sm ${
-              view === 'active' ? 'border-indigo-500 bg-indigo-600 text-white' : 'border-slate-700 bg-slate-900 text-slate-300 hover:bg-slate-800'
+            className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+              view === 'active'
+                ? 'bg-teal-500 text-slate-950 shadow shadow-teal-500/30'
+                : 'bg-white/5 text-slate-300 hover:bg-white/10'
             }`}
           >
             {PRODUCT_STATUS_LABELS.active}
           </button>
           <button
             onClick={() => setView('standby')}
-            className={`rounded-full border px-4 py-1.5 text-sm ${
-              view === 'standby' ? 'border-sky-500 bg-sky-600 text-white' : 'border-slate-700 bg-slate-900 text-slate-300 hover:bg-slate-800'
+            className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+              view === 'standby'
+                ? 'bg-violet-500 text-slate-950 shadow shadow-violet-500/30'
+                : 'bg-white/5 text-slate-300 hover:bg-white/10'
             }`}
           >
             {PRODUCT_STATUS_LABELS.standby} {standbyCount > 0 ? `(${standbyCount})` : ''}
           </button>
           <button
             onClick={() => setView('inventory')}
-            className={`rounded-full border px-4 py-1.5 text-sm ${
-              view === 'inventory' ? 'border-emerald-500 bg-emerald-600 text-white' : 'border-slate-700 bg-slate-900 text-slate-300 hover:bg-slate-800'
+            className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+              view === 'inventory'
+                ? 'bg-amber-400 text-slate-950 shadow shadow-amber-400/30'
+                : 'bg-white/5 text-slate-300 hover:bg-white/10'
             }`}
           >
             ניהול מלאי
@@ -304,7 +312,7 @@ export default function App() {
           loop={false}
         />
 
-        <CollapsibleSection title="היסטוריית מחיקות" icon="🗑️">
+        <CollapsibleSection title="היסטוריית מחיקות" icon="🗑️" accent="rose">
           <DeletedProducts deleted={deleted} onRestore={restoreProduct} onPurge={purgeDeleted} />
         </CollapsibleSection>
       </main>

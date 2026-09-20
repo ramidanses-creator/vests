@@ -4,21 +4,29 @@ interface Props {
   title: string
   icon?: string
   defaultOpen?: boolean
+  accent?: 'teal' | 'amber' | 'violet' | 'rose'
   children: ReactNode
 }
 
-export function CollapsibleSection({ title, icon, defaultOpen = false, children }: Props) {
+const ACCENT_BORDER: Record<NonNullable<Props['accent']>, string> = {
+  teal: 'border-teal-500',
+  amber: 'border-amber-400',
+  violet: 'border-violet-500',
+  rose: 'border-rose-500',
+}
+
+export function CollapsibleSection({ title, icon, defaultOpen = false, accent = 'teal', children }: Props) {
   const [open, setOpen] = useState(defaultOpen)
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-900 shadow-lg shadow-black/20">
+    <div className={`rounded-2xl border-r-4 bg-white/[0.04] shadow-lg shadow-black/20 ${ACCENT_BORDER[accent]}`}>
       <button onClick={() => setOpen((v) => !v)} className="flex w-full items-center justify-between p-4 text-right">
-        <span className="text-sm font-semibold text-slate-200">
+        <span className="text-sm font-semibold text-slate-100">
           {icon ? `${icon} ` : ''}
           {title}
         </span>
         <span className="text-slate-500">{open ? '︿' : '﹀'}</span>
       </button>
-      {open && <div className="border-t border-slate-800 p-4 pt-4">{children}</div>}
+      {open && <div className="border-t border-white/10 p-4 pt-4">{children}</div>}
     </div>
   )
 }

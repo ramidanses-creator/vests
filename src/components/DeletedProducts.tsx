@@ -16,7 +16,7 @@ export function DeletedProducts({ deleted, onRestore, onPurge }: Props) {
       {deleted.map(({ product, deletedAt }) => (
         <div
           key={product.id}
-          className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-slate-800/60 px-3 py-2 text-sm"
+          className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-white/5 px-3 py-2 text-sm"
         >
           <div className="flex flex-col">
             <span className="font-medium text-slate-200">{product.name || 'מוצר ללא שם'}</span>
@@ -31,7 +31,7 @@ export function DeletedProducts({ deleted, onRestore, onPurge }: Props) {
             </button>
             <button
               onClick={() => onPurge(product.id)}
-              className="rounded border border-slate-700 px-2 py-1 text-xs text-red-400 hover:bg-red-950/40"
+              className="rounded-lg border border-white/10 px-2 py-1 text-xs text-rose-300 hover:bg-rose-500/10"
             >
               מחק לצמיתות
             </button>

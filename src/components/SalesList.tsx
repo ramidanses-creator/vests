@@ -28,7 +28,7 @@ export function SalesList({ sales, onChange }: Props) {
         <h3 className="text-sm font-semibold text-slate-200">מכירות</h3>
         <button
           onClick={addSale}
-          className="rounded-full border border-dashed border-slate-600 px-3 py-1 text-xs text-slate-400 hover:bg-slate-800"
+          className="rounded-full border border-dashed border-amber-500/40 px-3 py-1 text-xs text-amber-300 hover:bg-amber-500/10"
         >
           + מכירה
         </button>
@@ -40,7 +40,7 @@ export function SalesList({ sales, onChange }: Props) {
               type="date"
               value={sale.date}
               onChange={(e) => updateSale(sale.id, { date: e.target.value })}
-              className="rounded border border-slate-700 bg-slate-950/60 px-2 py-1.5 text-sm text-slate-100"
+              className="rounded border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-slate-100"
             />
             <input
               type="text"
@@ -48,7 +48,7 @@ export function SalesList({ sales, onChange }: Props) {
               placeholder="כמות"
               value={sale.quantity === 0 ? '' : sale.quantity}
               onChange={(e) => updateSale(sale.id, { quantity: Number(e.target.value) || 0 })}
-              className="w-20 rounded border border-slate-700 bg-slate-950/60 px-2 py-1.5 text-sm text-slate-100"
+              className="w-20 rounded border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-slate-100"
             />
             <input
               type="text"
@@ -56,11 +56,11 @@ export function SalesList({ sales, onChange }: Props) {
               placeholder="מחיר ליחידה"
               value={sale.pricePerUnit === 0 ? '' : sale.pricePerUnit}
               onChange={(e) => updateSale(sale.id, { pricePerUnit: Number(e.target.value) || 0 })}
-              className="w-28 rounded border border-slate-700 bg-slate-950/60 px-2 py-1.5 text-sm text-slate-100"
+              className="w-28 rounded border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-slate-100"
             />
             <button
               onClick={() => removeSale(sale.id)}
-              className="rounded border border-slate-700 px-2 py-1.5 text-xs text-red-400 hover:bg-red-950/40"
+              className="rounded-lg border border-white/10 px-2 py-1.5 text-xs text-rose-300 hover:bg-rose-500/10"
             >
               מחק
             </button>

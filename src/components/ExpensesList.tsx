@@ -54,7 +54,7 @@ function ExpenseRow({
           placeholder="תיאור ההוצאה (למשל: משלוח, מכס)"
           value={expense.label}
           onChange={(e) => onUpdate(expense.id, { label: e.target.value })}
-          className="min-w-0 flex-1 rounded border border-slate-700 bg-slate-950/60 px-2 py-1.5 text-sm text-slate-100"
+          className="min-w-0 flex-1 rounded border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-slate-100"
         />
         <input
           type="text"
@@ -62,25 +62,25 @@ function ExpenseRow({
           placeholder="סכום"
           value={expense.amount === 0 ? '' : expense.amount}
           onChange={(e) => onUpdate(expense.id, { amount: Number(e.target.value) || 0 })}
-          className="w-24 rounded border border-slate-700 bg-slate-950/60 px-2 py-1.5 text-sm text-slate-100"
+          className="w-24 rounded border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-slate-100"
         />
-        <div className="flex overflow-hidden rounded border border-slate-700 text-xs">
+        <div className="flex overflow-hidden rounded-lg border border-white/10 text-xs">
           <button
             onClick={() => onUpdate(expense.id, { currency: 'ILS' })}
-            className={`px-2 py-1.5 ${expense.currency === 'ILS' ? 'bg-indigo-600 text-white' : 'bg-slate-900 text-slate-400'}`}
+            className={`px-2 py-1.5 ${expense.currency === 'ILS' ? 'bg-teal-500 text-slate-950' : 'bg-black/20 text-slate-400'}`}
           >
             ₪
           </button>
           <button
             onClick={() => onUpdate(expense.id, { currency: 'USD' })}
-            className={`px-2 py-1.5 ${expense.currency === 'USD' ? 'bg-indigo-600 text-white' : 'bg-slate-900 text-slate-400'}`}
+            className={`px-2 py-1.5 ${expense.currency === 'USD' ? 'bg-teal-500 text-slate-950' : 'bg-black/20 text-slate-400'}`}
           >
             $
           </button>
         </div>
         <button
           onClick={() => onRemove(expense.id)}
-          className="rounded border border-slate-700 px-2 py-1.5 text-xs text-red-400 hover:bg-red-950/40"
+          className="rounded-lg border border-white/10 px-2 py-1.5 text-xs text-rose-300 hover:bg-rose-500/10"
         >
           מחק
         </button>
@@ -132,7 +132,7 @@ export function ExpensesList({ expenses, onChange, usdToIlsRate, quantityImporte
         <h3 className="text-sm font-semibold text-slate-200">הוצאות עד הגעה לארץ</h3>
         <button
           onClick={addExpense}
-          className="rounded-full border border-dashed border-slate-600 px-3 py-1 text-xs text-slate-400 hover:bg-slate-800"
+          className="rounded-full border border-dashed border-amber-500/40 px-3 py-1 text-xs text-amber-300 hover:bg-amber-500/10"
         >
           + הוצאה
         </button>
@@ -154,7 +154,7 @@ export function ExpensesList({ expenses, onChange, usdToIlsRate, quantityImporte
               )}
             </div>
           ) : (
-            <div key={group.label} className="rounded-md border border-slate-700 bg-slate-800/40">
+            <div key={group.label} className="rounded-lg bg-white/5">
               <button
                 onClick={() => toggleGroup(group.label)}
                 className="flex w-full items-center justify-between px-3 py-2 text-sm"
@@ -175,7 +175,7 @@ export function ExpensesList({ expenses, onChange, usdToIlsRate, quantityImporte
                 </span>
               </button>
               {openGroups.has(group.label) && (
-                <div className="flex flex-col gap-2 border-t border-slate-700 p-2">
+                <div className="flex flex-col gap-2 border-t border-white/10 p-2">
                   {group.items.map((expense) => (
                     <ExpenseRow
                       key={expense.id}

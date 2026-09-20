@@ -27,7 +27,7 @@ export function InventoryByCategory({ products, usdToIlsRate }: Props) {
       {rows.map(([category, { imported, remaining }]) => (
         <div
           key={category}
-          className="flex flex-wrap items-center justify-between gap-1 rounded-md bg-slate-800/60 px-3 py-2 text-sm"
+          className="flex flex-wrap items-center justify-between gap-1 rounded-lg bg-white/5 px-3 py-2 text-sm"
         >
           <span className="font-medium text-slate-200">{category}</span>
           <span className="text-slate-400">

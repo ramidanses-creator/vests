@@ -11,7 +11,7 @@ interface Props {
 export function InventoryPage({ products, onChange, usdToIlsRate }: Props) {
   if (products.length === 0) {
     return (
-      <p className="rounded-lg border border-dashed border-slate-700 bg-slate-900 p-6 text-center text-sm text-slate-500">
+      <p className="rounded-2xl border border-dashed border-white/15 bg-white/[0.03] p-6 text-center text-sm text-slate-400">
         אין מוצרים עדיין.
       </p>
     )
@@ -22,7 +22,7 @@ export function InventoryPage({ products, onChange, usdToIlsRate }: Props) {
       {products.map((product) => {
         const totals = calculateProductTotals(product, usdToIlsRate)
         return (
-          <div key={product.id} className="rounded-xl border border-slate-800 bg-slate-900 p-4 shadow-lg shadow-black/20">
+          <div key={product.id} className="rounded-2xl border-r-4 border-amber-400 bg-white/[0.04] p-4 shadow-lg shadow-black/20">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
               <h3 className="text-base font-semibold text-slate-100">{product.name || 'מוצר ללא שם'}</h3>
               <span className="text-xs text-slate-400">
