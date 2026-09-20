@@ -165,7 +165,6 @@ export function ProductCard({ product, onChange, onRemove, usdToIlsRate, categor
                 רווח רצוי (%)
                 <input
                   type="number"
-                  min={0}
                   value={product.targetProfitPercent === 0 ? '' : product.targetProfitPercent}
                   onChange={(e) => onChange({ ...product, targetProfitPercent: Number(e.target.value) || 0 })}
                   className="rounded border border-slate-700 bg-slate-950/60 px-2 py-1.5 text-sm text-slate-100"
@@ -175,13 +174,12 @@ export function ProductCard({ product, onChange, onRemove, usdToIlsRate, categor
                 או: מחיר מכירה רצוי ליחידה
                 <input
                   type="number"
-                  min={0}
                   step="0.01"
                   value={totals.suggestedSalePrice === 0 ? '' : Number(totals.suggestedSalePrice.toFixed(2))}
                   onChange={(e) => {
                     const price = Number(e.target.value) || 0
                     const percent = totals.costPerUnit > 0 ? (price / totals.costPerUnit - 1) * 100 : 0
-                    onChange({ ...product, targetProfitPercent: Math.max(0, Number(percent.toFixed(2))) })
+                    onChange({ ...product, targetProfitPercent: Number(percent.toFixed(2)) })
                   }}
                   className="rounded border border-slate-700 bg-slate-950/60 px-2 py-1.5 text-sm text-slate-100"
                 />
