@@ -8,6 +8,25 @@ import { useOfficialRate } from './hooks/useOfficialRate'
 import { PRODUCT_STATUS_LABELS, type Product, type ProductStatus } from './types'
 
 const STORAGE_KEY = 'import-tracker-products'
+const SEEN_REMOTE_IDS_KEY = 'import-tracker-seen-remote-ids'
+
+function loadSeenRemoteIds(): Set<string> {
+  try {
+    const raw = localStorage.getItem(SEEN_REMOTE_IDS_KEY)
+    if (!raw) return new Set()
+    return new Set(JSON.parse(raw) as string[])
+  } catch {
+    return new Set()
+  }
+}
+
+function saveSeenRemoteIds(ids: Set<string>) {
+  try {
+    localStorage.setItem(SEEN_REMOTE_IDS_KEY, JSON.stringify(Array.from(ids)))
+  } catch {
+    // ignore storage failures
+  }
+}
 
 function normalizeProduct(raw: Partial<Product>): Product {
   const fallback = createDefaultProduct()
@@ -56,6 +75,26 @@ export default function App() {
   useEffect(() => {
     saveProducts(products)
   }, [products])
+
+  useEffect(() => {
+    fetch('products.json')
+      .then((res) => (res.ok ? res.json() : []))
+      .then((remote: Partial<Product>[]) => {
+        if (!Array.isArray(remote) || remote.length === 0) return
+        const seen = loadSeenRemoteIds()
+        setProducts((prev) => {
+          const existingIds = new Set(prev.map((p) => p.id))
+          const toAdd = remote.filter((r) => r.id && !existingIds.has(r.id) && !seen.has(r.id))
+          if (toAdd.length === 0) return prev
+          toAdd.forEach((r) => seen.add(r.id as string))
+          saveSeenRemoteIds(seen)
+          return [...prev, ...toAdd.map(normalizeProduct)]
+        })
+      })
+      .catch(() => {
+        // no remote products file yet, or offline — ignore
+      })
+  }, [])
 
   function updateProduct(updated: Product) {
     setProducts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)))
