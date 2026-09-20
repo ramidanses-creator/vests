@@ -47,23 +47,6 @@ export function calculateProductTotals(product: Product, fallbackUsdToIlsRate: n
   }
 }
 
-export function groupExpensesByLabel(
-  expenses: Product['expenses'],
-  usdToIlsRate: number | null,
-): { label: string; total: number; count: number }[] {
-  const map = new Map<string, { total: number; count: number }>()
-  expenses.forEach((e) => {
-    const key = e.label.trim() || 'ללא תיאור'
-    const entry = map.get(key) ?? { total: 0, count: 0 }
-    entry.total += amountInIls(e.amount, e.currency, usdToIlsRate)
-    entry.count += 1
-    map.set(key, entry)
-  })
-  return Array.from(map.entries())
-    .filter(([, v]) => v.count > 1)
-    .map(([label, v]) => ({ label, total: v.total, count: v.count }))
-}
-
 export function formatCurrency(value: number): string {
   return new Intl.NumberFormat('he-IL', { style: 'currency', currency: 'ILS', maximumFractionDigits: 2 }).format(
     Number.isFinite(value) ? value : 0,
