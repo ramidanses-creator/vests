@@ -135,6 +135,7 @@ function AppContent({ uid, userEmail }: AppContentProps) {
   const [chatOpen, setChatOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [cloudLoaded, setCloudLoaded] = useState(false)
+  const [previousLoginAt, setPreviousLoginAt] = useState<number | null>(null)
   const { officialRate } = useOfficialRate()
 
   useEffect(() => {
@@ -145,21 +146,28 @@ function AppContent({ uid, userEmail }: AppContentProps) {
     saveDeleted(deleted)
   }, [deleted])
 
-  // Load this user's data from Firestore once on sign-in.
+  // Load this user's data from Firestore once on sign-in, record the previous
+  // login time for display, then stamp this session as the new "last login".
   useEffect(() => {
     setCloudLoaded(false)
     let cancelled = false
-    getDoc(doc(db, 'users', uid)).then((snap) => {
+    const userDocRef = doc(db, 'users', uid)
+    getDoc(userDocRef).then((snap) => {
       if (cancelled) return
       if (snap.exists()) {
         const data = snap.data() as {
           products?: Partial<Product>[]
           deleted?: { product: Partial<Product>; deletedAt: string }[]
+          lastLoginAt?: number
         }
         if (data.products) setProducts(data.products.map(normalizeProduct))
         if (data.deleted) setDeleted(data.deleted.map((d) => ({ product: normalizeProduct(d.product), deletedAt: d.deletedAt })))
+        setPreviousLoginAt(data.lastLoginAt ?? null)
+      } else {
+        setPreviousLoginAt(null)
       }
       setCloudLoaded(true)
+      setDoc(userDocRef, { lastLoginAt: Date.now() }, { merge: true }).catch(() => {})
     })
     return () => {
       cancelled = true
@@ -168,9 +176,10 @@ function AppContent({ uid, userEmail }: AppContentProps) {
 
   // Push local changes to Firestore once the cloud data has finished loading,
   // so a fresh sign-in doesn't overwrite cloud data with stale local state.
+  // merge:true keeps the lastLoginAt field written above intact.
   useEffect(() => {
     if (!cloudLoaded) return
-    setDoc(doc(db, 'users', uid), { products, deleted, updatedAt: Date.now() }).catch(() => {
+    setDoc(doc(db, 'users', uid), { products, deleted, updatedAt: Date.now() }, { merge: true }).catch(() => {
       // offline or blocked — localStorage still has the data
     })
   }, [uid, cloudLoaded, products, deleted])
@@ -310,6 +319,11 @@ function AppContent({ uid, userEmail }: AppContentProps) {
           </div>
           <div className="flex flex-col items-end gap-1 text-xs text-slate-500">
             {userEmail && <span>{userEmail}</span>}
+            <span>
+              {previousLoginAt
+                ? `התחברות קודמת: ${new Date(previousLoginAt).toLocaleString('he-IL')}`
+                : 'זו הכניסה הראשונה שלך'}
+            </span>
             <button onClick={() => signOut(auth)} className="text-slate-400 hover:text-slate-200">
               התנתקות
             </button>
