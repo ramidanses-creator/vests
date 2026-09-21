@@ -4,7 +4,7 @@ interface Props {
   title: string
   icon?: string
   defaultOpen?: boolean
-  accent?: 'teal' | 'amber' | 'violet' | 'rose'
+  accent?: 'teal' | 'amber' | 'violet' | 'rose' | 'sky'
   children: ReactNode
 }
 
@@ -13,6 +13,7 @@ const ACCENT_BORDER: Record<NonNullable<Props['accent']>, string> = {
   amber: 'border-amber-400',
   violet: 'border-violet-500',
   rose: 'border-rose-500',
+  sky: 'border-sky-400',
 }
 
 export function CollapsibleSection({ title, icon, defaultOpen = false, accent = 'teal', children }: Props) {
