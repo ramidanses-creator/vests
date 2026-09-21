@@ -130,12 +130,7 @@ export function AuthScreen() {
         onSubmit={handleSubmit}
         className="flex w-full max-w-sm flex-col gap-4 rounded-xl border border-white/10 bg-[#1a1b20] p-6"
       >
-        <div>
-          <h1 className="text-lg font-bold text-slate-100">מעקב הזמנות ורווחים</h1>
-          <p className="mt-1 text-sm text-slate-400">
-            {mode === 'signin' ? 'התחברות לחשבון' : 'יצירת חשבון חדש'}
-          </p>
-        </div>
+        <p className="text-sm text-slate-400">{mode === 'signin' ? 'התחברות לחשבון' : 'יצירת חשבון חדש'}</p>
 
         <label className="flex flex-col gap-1 text-xs text-slate-400">
           אימייל
