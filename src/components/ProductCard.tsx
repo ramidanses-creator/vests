@@ -2,7 +2,6 @@ import { useState } from 'react'
 import type { Product } from '../types'
 import { calculateProductTotals, formatCurrency } from '../utils/calculations'
 import { ExpensesList } from './ExpensesList'
-import { SalesList } from './SalesList'
 import { ShipmentsList } from './ShipmentsList'
 
 interface Props {
@@ -237,17 +236,15 @@ export function ProductCard({
             <ShipmentsList shipments={product.shipments} onChange={(shipments) => onChange({ ...product, shipments })} />
           </Section>
 
-          <Section title="הוצאות ומכירות" dot="bg-violet-400">
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-              <ExpensesList
-                expenses={product.expenses}
-                onChange={(expenses) => onChange({ ...product, expenses })}
-                usdToIlsRate={effectiveRate}
-                quantityImported={totals.quantityImported}
-                labelOptions={expenseLabelOptions}
-              />
-              <SalesList sales={product.sales} onChange={(sales) => onChange({ ...product, sales })} />
-            </div>
+          <Section title="הוצאות" dot="bg-violet-400">
+            <ExpensesList
+              expenses={product.expenses}
+              onChange={(expenses) => onChange({ ...product, expenses })}
+              usdToIlsRate={effectiveRate}
+              quantityImported={totals.quantityImported}
+              labelOptions={expenseLabelOptions}
+            />
+            <p className="mt-2 text-xs text-slate-500">דיווח מכירות והחזרות מתבצע בתפריט "מכירות והחזרות" הנפרד למעלה.</p>
           </Section>
 
           <textarea

@@ -6,6 +6,7 @@ import { DeletedProducts } from './components/DeletedProducts'
 import { InventoryByCategory } from './components/InventoryByCategory'
 import { InventoryPage } from './components/InventoryPage'
 import { ProductCard } from './components/ProductCard'
+import { SalesCenter } from './components/SalesCenter'
 import { SummaryPanel } from './components/SummaryPanel'
 import { SwipeViews } from './components/SwipeViews'
 import { createDefaultProduct } from './defaultProduct'
@@ -257,6 +258,10 @@ export default function App() {
 
         <CollapsibleSection title="בדיקת מלאי לפי קטגוריה" icon="📦" accent="violet">
           <InventoryByCategory products={products} usdToIlsRate={officialRate} />
+        </CollapsibleSection>
+
+        <CollapsibleSection title="מכירות והחזרות" icon="🧾" accent="rose">
+          <SalesCenter products={products} onChange={updateProduct} usdToIlsRate={officialRate} />
         </CollapsibleSection>
 
         <CollapsibleSection title="מחשבון המרה דולר / שקל" icon="💱" accent="amber">
