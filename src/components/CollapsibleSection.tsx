@@ -19,7 +19,7 @@ const ACCENT_BORDER: Record<NonNullable<Props['accent']>, string> = {
 export function CollapsibleSection({ title, icon, defaultOpen = false, accent = 'teal', children }: Props) {
   const [open, setOpen] = useState(defaultOpen)
   return (
-    <div className={`rounded-2xl border-r-4 bg-white/[0.04] shadow-lg shadow-black/20 ${ACCENT_BORDER[accent]}`}>
+    <div className={`rounded-xl border border-white/10 border-r-2 bg-[#1a1b20] ${ACCENT_BORDER[accent]}`}>
       <button onClick={() => setOpen((v) => !v)} className="flex w-full items-center justify-between p-4 text-right">
         <span className="text-sm font-semibold text-slate-100">
           {icon ? `${icon} ` : ''}

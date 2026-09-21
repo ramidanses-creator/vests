@@ -225,7 +225,7 @@ export default function App() {
     return (
       <div className="flex flex-col gap-6">
         {list.length === 0 && (
-          <p className="rounded-2xl border border-dashed border-white/15 bg-white/[0.03] p-6 text-center text-sm text-slate-400">
+          <p className="rounded-xl border border-dashed border-white/15 bg-white/[0.03] p-6 text-center text-sm text-slate-400">
             {searchQuery.trim()
               ? 'לא נמצאו מוצרים תואמים לחיפוש.'
               : v === 'active'
@@ -248,7 +248,7 @@ export default function App() {
         {v === 'active' && (
           <button
             onClick={addProduct}
-            className="rounded-2xl border-2 border-dashed border-teal-700/60 bg-teal-950/10 px-4 py-3 text-sm font-medium text-teal-300 hover:bg-teal-950/20"
+            className="rounded-xl border-2 border-dashed border-teal-700/60 bg-teal-950/10 px-4 py-3 text-sm font-medium text-teal-300 hover:bg-teal-950/20"
           >
             + מוצר חדש
           </button>
@@ -261,9 +261,7 @@ export default function App() {
     <div className="min-h-screen pb-16" dir="rtl">
       <header className="sticky top-0 z-10 border-b border-white/10 bg-[#0f1117]/90 backdrop-blur">
         <div className="mx-auto flex max-w-5xl flex-col gap-1 px-4 py-4 sm:py-5">
-          <h1 className="bg-gradient-to-l from-sky-400 via-violet-400 to-amber-300 bg-clip-text text-xl font-extrabold text-transparent sm:text-2xl">
-            מעקב הזמנות ורווחים
-          </h1>
+          <h1 className="text-xl font-bold text-slate-100 sm:text-2xl">מעקב הזמנות ורווחים</h1>
           <p className="text-sm text-slate-400">
             רשמו לכל מוצר את כל ההוצאות עד הגעתו לארץ ואת המכירות שלו — האפליקציה תחשב עלות ליחידה ורווח בפועל.
           </p>
@@ -273,23 +271,23 @@ export default function App() {
       <main className="mx-auto mt-6 flex max-w-5xl flex-col gap-6 px-4">
         <SummaryPanel products={products} usdToIlsRate={officialRate} />
 
-        <CollapsibleSection title="בדיקת מלאי לפי קטגוריה" icon="📦" accent="violet">
+        <CollapsibleSection title="בדיקת מלאי לפי קטגוריה" accent="violet">
           <InventoryByCategory products={products} usdToIlsRate={officialRate} />
         </CollapsibleSection>
 
-        <CollapsibleSection title="פיצול משלוח/מכס משותף בין מוצרים" icon="✂️" accent="sky">
+        <CollapsibleSection title="פיצול משלוח/מכס משותף בין מוצרים" accent="sky">
           <ShipmentSplitCalculator products={products} onChange={updateProduct} usdToIlsRate={officialRate} />
         </CollapsibleSection>
 
-        <CollapsibleSection title="מכירות והחזרות" icon="🧾" accent="rose">
+        <CollapsibleSection title="מכירות והחזרות" accent="rose">
           <SalesCenter products={filteredProducts} onChange={updateProduct} usdToIlsRate={officialRate} />
         </CollapsibleSection>
 
-        <CollapsibleSection title="גיבוי ושחזור" icon="💾" accent="teal">
+        <CollapsibleSection title="גיבוי ושחזור" accent="teal">
           <BackupTools products={products} deleted={deleted} onImport={importBackup} />
         </CollapsibleSection>
 
-        <CollapsibleSection title="מחשבון המרה דולר / שקל" icon="💱" accent="amber">
+        <CollapsibleSection title="מחשבון המרה דולר / שקל" accent="amber">
           <CurrencyConverter />
         </CollapsibleSection>
 
@@ -302,9 +300,9 @@ export default function App() {
         ) : (
           <button
             onClick={() => setChatOpen(true)}
-            className="rounded-2xl border-r-4 border-teal-500 bg-teal-950/30 px-4 py-3 text-sm font-medium text-teal-200 shadow-lg shadow-black/20 hover:bg-teal-950/50"
+            className="rounded-xl border border-white/10 bg-teal-950/30 px-4 py-3 text-sm font-medium text-teal-200 hover:bg-teal-950/50"
           >
-            💬 הוספת מוצר בצ׳אט
+            הוספת מוצר בצ׳אט
           </button>
         )}
 
@@ -312,14 +310,14 @@ export default function App() {
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="🔍 חיפוש מוצר לפי שם או קטגוריה"
+          placeholder="חיפוש מוצר לפי שם או קטגוריה"
           className="rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-100 focus:border-teal-500 focus:outline-none"
         />
 
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setView('active')}
-            className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+            className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
               view === 'active'
                 ? 'bg-teal-500 text-slate-950 shadow shadow-teal-500/30'
                 : 'bg-white/5 text-slate-300 hover:bg-white/10'
@@ -329,7 +327,7 @@ export default function App() {
           </button>
           <button
             onClick={() => setView('standby')}
-            className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+            className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
               view === 'standby'
                 ? 'bg-violet-500 text-slate-950 shadow shadow-violet-500/30'
                 : 'bg-white/5 text-slate-300 hover:bg-white/10'
@@ -339,7 +337,7 @@ export default function App() {
           </button>
           <button
             onClick={() => setView('inventory')}
-            className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+            className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
               view === 'inventory'
                 ? 'bg-amber-400 text-slate-950 shadow shadow-amber-400/30'
                 : 'bg-white/5 text-slate-300 hover:bg-white/10'
@@ -357,7 +355,7 @@ export default function App() {
           loop={false}
         />
 
-        <CollapsibleSection title="היסטוריית מחיקות" icon="🗑️" accent="rose">
+        <CollapsibleSection title="היסטוריית מחיקות" accent="rose">
           <DeletedProducts deleted={deleted} onRestore={restoreProduct} onPurge={purgeDeleted} />
         </CollapsibleSection>
       </main>

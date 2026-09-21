@@ -57,13 +57,13 @@ export function BackupTools({ products, deleted, onImport }: Props) {
       <div className="flex flex-wrap gap-2">
         <button
           onClick={handleExport}
-          className="rounded-full bg-teal-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-teal-400"
+          className="rounded-md bg-teal-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-teal-400"
         >
           ⬇️ ייצוא גיבוי
         </button>
         <button
           onClick={() => fileInputRef.current?.click()}
-          className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-slate-200 hover:bg-white/10"
+          className="rounded-md border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-slate-200 hover:bg-white/10"
         >
           ⬆️ ייבוא גיבוי
         </button>

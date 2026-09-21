@@ -36,7 +36,7 @@ export function ProductCard({
 
   return (
     <div
-      className={`overflow-hidden rounded-2xl border-r-4 bg-white/[0.04] shadow-lg shadow-black/20 ${inSystem ? 'border-violet-500' : 'border-teal-500'}`}
+      className={`overflow-hidden rounded-xl border border-white/10 border-r-2 bg-[#1a1b20] ${inSystem ? 'border-violet-500' : 'border-teal-500'}`}
     >
       <button onClick={() => setExpanded((v) => !v)} className="flex w-full flex-col gap-2 p-4 text-right">
         <div className="flex items-center gap-2">
@@ -47,20 +47,20 @@ export function ProductCard({
         </div>
         <div className="flex flex-wrap items-center gap-1.5 text-xs">
           {product.category && (
-            <span className="rounded-full bg-white/10 px-2 py-0.5 text-slate-200">{product.category}</span>
+            <span className="rounded-md bg-white/10 px-2 py-0.5 text-slate-200">{product.category}</span>
           )}
-          {inSystem && <span className="rounded-full bg-violet-500/20 px-2 py-0.5 text-violet-300">רשום במערכת</span>}
+          {inSystem && <span className="rounded-md bg-violet-500/20 px-2 py-0.5 text-violet-300">רשום במערכת</span>}
           {totals.quantityPending > 0 && (
-            <span className="rounded-full bg-amber-400/20 px-2 py-0.5 text-amber-300">
-              🚚 ממתין {totals.quantityPending}
+            <span className="rounded-md bg-amber-400/20 px-2 py-0.5 text-amber-300">
+              ממתין {totals.quantityPending}
             </span>
           )}
-          <span className="rounded-full bg-sky-400/15 px-2 py-0.5 text-sky-300">
+          <span className="rounded-md bg-sky-400/15 px-2 py-0.5 text-sky-300">
             עלות/יח׳ {formatCurrency(totals.costPerUnit)}
           </span>
-          <span className="rounded-full bg-white/10 px-2 py-0.5 text-slate-200">במלאי {totals.quantityRemaining}</span>
+          <span className="rounded-md bg-white/10 px-2 py-0.5 text-slate-200">במלאי {totals.quantityRemaining}</span>
           <span
-            className={`rounded-full px-2 py-0.5 font-medium ${totals.totalProfit >= 0 ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'}`}
+            className={`rounded-md px-2 py-0.5 font-medium ${totals.totalProfit >= 0 ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'}`}
           >
             רווח {formatCurrency(totals.totalProfit)}
           </span>
@@ -90,7 +90,7 @@ export function ProductCard({
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={toggleStatus}
-                className={`whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-medium ${
+                className={`whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-medium ${
                   inSystem
                     ? 'bg-violet-500/20 text-violet-300 hover:bg-violet-500/30'
                     : 'bg-white/10 text-slate-300 hover:bg-white/15'
@@ -100,7 +100,7 @@ export function ProductCard({
               </button>
               <button
                 onClick={onRemove}
-                className="rounded-full bg-rose-500/10 px-3 py-1.5 text-xs font-medium text-rose-300 hover:bg-rose-500/20"
+                className="rounded-md bg-rose-500/10 px-3 py-1.5 text-xs font-medium text-rose-300 hover:bg-rose-500/20"
               >
                 מחק מוצר
               </button>

@@ -13,11 +13,11 @@ export function SummaryPanel({ products, usdToIlsRate }: Props) {
   const totalProfit = totals.reduce((sum, t) => sum + t.totalProfit, 0)
 
   return (
-    <div className="overflow-hidden rounded-2xl shadow-lg shadow-black/20">
-      <div className="bg-gradient-to-l from-teal-600/25 via-violet-600/15 to-amber-500/15 px-4 pb-2 pt-4">
+    <div className="overflow-hidden rounded-xl border border-white/10">
+      <div className="border-b border-white/10 bg-[#17181d] px-4 pb-2 pt-4">
         <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-300">סיכום כללי</h2>
       </div>
-      <div className="grid grid-cols-3 divide-x divide-x-reverse divide-white/10 bg-white/[0.04] text-sm">
+      <div className="grid grid-cols-3 divide-x divide-x-reverse divide-white/10 bg-[#1a1b20] text-sm">
         <div className="flex flex-col gap-1 p-4">
           <span className="text-xs text-amber-300">סה״כ הוצאות</span>
           <span className="text-lg font-bold text-slate-100">{formatCurrency(totalCost)}</span>

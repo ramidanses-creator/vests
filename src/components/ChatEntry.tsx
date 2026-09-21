@@ -87,7 +87,7 @@ export function ChatEntry({ onCreate, onClose, usdRateOverride }: Props) {
       })
     }
     onCreate(product)
-    setMessages((prev) => [...prev, { from: 'bot', text: `נוצר מוצר "${product.name || 'ללא שם'}" ✅ אפשר לערוך אותו בכרטיס למטה.` }])
+    setMessages((prev) => [...prev, { from: 'bot', text: `נוצר מוצר "${product.name || 'ללא שם'}" — אפשר לערוך אותו בכרטיס למטה.` }])
     setDone(true)
   }
 
@@ -146,7 +146,7 @@ export function ChatEntry({ onCreate, onClose, usdRateOverride }: Props) {
   }
 
   return (
-    <div className="flex flex-col overflow-hidden rounded-2xl border-r-4 border-teal-500 bg-white/[0.04] shadow-lg shadow-black/20">
+    <div className="flex flex-col overflow-hidden rounded-xl border border-white/10 bg-[#1a1b20]">
       <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
         <h2 className="text-sm font-semibold text-slate-100">הוספת מוצר בצ׳אט</h2>
         <button onClick={onClose} className="text-xs text-slate-500 hover:text-slate-300">

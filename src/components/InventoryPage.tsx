@@ -22,7 +22,7 @@ export function InventoryPage({ products, onChange, usdToIlsRate }: Props) {
 
   if (products.length === 0) {
     return (
-      <p className="rounded-2xl border border-dashed border-white/15 bg-white/[0.03] p-6 text-center text-sm text-slate-400">
+      <p className="rounded-xl border border-dashed border-white/15 bg-white/[0.03] p-6 text-center text-sm text-slate-400">
         אין מוצרים עדיין.
       </p>
     )
@@ -41,7 +41,7 @@ export function InventoryPage({ products, onChange, usdToIlsRate }: Props) {
             <button
               key={product.id}
               onClick={() => setExpandedId(isExpanded ? null : product.id)}
-              className={`flex flex-col items-start gap-1.5 rounded-2xl border-r-4 border-amber-400 bg-white/[0.04] p-3 text-right shadow-lg shadow-black/20 transition-transform duration-200 ease-out ${
+              className={`flex flex-col items-start gap-1.5 rounded-xl border border-white/10 bg-[#1a1b20] p-3 text-right transition-transform duration-200 ease-out ${
                 isExpanded ? 'scale-105 ring-2 ring-amber-400/60' : 'scale-100 hover:scale-[1.02]'
               }`}
             >
@@ -61,7 +61,7 @@ export function InventoryPage({ products, onChange, usdToIlsRate }: Props) {
                 </span>
               </div>
               {arrival && (
-                <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] text-amber-300">
+                <span className="rounded-md bg-amber-500/10 px-2 py-0.5 text-[11px] text-amber-300">
                   צפוי: {arrival}
                 </span>
               )}
@@ -71,7 +71,7 @@ export function InventoryPage({ products, onChange, usdToIlsRate }: Props) {
       </div>
 
       {expandedProduct && (
-        <div className="animate-[grow_200ms_ease-out] rounded-2xl border-r-4 border-amber-400 bg-white/[0.04] p-4 shadow-lg shadow-black/20 origin-top">
+        <div className="animate-[grow_200ms_ease-out] rounded-xl border border-white/10 bg-[#1a1b20] p-4 origin-top">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <h3 className="text-base font-semibold text-slate-100">{expandedProduct.name || 'מוצר ללא שם'}</h3>
             <button onClick={() => setExpandedId(null)} className="text-xs text-slate-500 hover:text-slate-300">

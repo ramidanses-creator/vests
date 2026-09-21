@@ -8,10 +8,7 @@ html {
 body {
   margin: 0;
   font-family: system-ui, 'Segoe UI', Arial, sans-serif;
-  background:
-    radial-gradient(1100px 550px at 100% -10%, rgba(45, 212, 191, 0.10), transparent),
-    radial-gradient(900px 500px at -10% 10%, rgba(251, 191, 36, 0.07), transparent),
-    #121317;
+  background: #121317;
   color: #eef1f6;
 }
 

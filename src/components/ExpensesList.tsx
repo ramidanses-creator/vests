@@ -132,7 +132,7 @@ export function ExpensesList({ expenses, onChange, usdToIlsRate, quantityImporte
         <h3 className="text-sm font-semibold text-slate-200">הוצאות עד הגעה לארץ</h3>
         <button
           onClick={addExpense}
-          className="rounded-full border border-dashed border-amber-500/40 px-3 py-1 text-xs text-amber-300 hover:bg-amber-500/10"
+          className="rounded-md border border-dashed border-amber-500/40 px-3 py-1 text-xs text-amber-300 hover:bg-amber-500/10"
         >
           + הוצאה
         </button>

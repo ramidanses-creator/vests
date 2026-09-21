@@ -154,7 +154,7 @@ export function ShipmentSplitCalculator({ products, onChange, usdToIlsRate }: Pr
       <button
         onClick={applySplit}
         disabled={shares.length === 0 || (shippingIls === 0 && customsIls === 0)}
-        className="self-start rounded-full bg-sky-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-sky-400 disabled:cursor-not-allowed disabled:opacity-40"
+        className="self-start rounded-md bg-sky-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-sky-400 disabled:cursor-not-allowed disabled:opacity-40"
       >
         {applied ? '✓ נוסף כהוצאה לכל מוצר' : 'החל ופצל כהוצאות'}
       </button>

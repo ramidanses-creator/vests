@@ -27,7 +27,7 @@ export function ShipmentsList({ shipments, onChange }: Props) {
         <h3 className="text-sm font-semibold text-slate-200">משלוחים / הגעה</h3>
         <button
           onClick={addShipment}
-          className="rounded-full border border-dashed border-amber-500/40 px-3 py-1 text-xs text-amber-300 hover:bg-amber-500/10"
+          className="rounded-md border border-dashed border-amber-500/40 px-3 py-1 text-xs text-amber-300 hover:bg-amber-500/10"
         >
           + משלוח
         </button>

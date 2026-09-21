@@ -54,7 +54,7 @@ export function SalesList({ sales, onChange }: Props) {
         <h3 className="text-sm font-semibold text-slate-200">מכירות</h3>
         <button
           onClick={addSale}
-          className="rounded-full bg-amber-500 px-3 py-1.5 text-xs font-semibold text-slate-950 hover:bg-amber-400"
+          className="rounded-md bg-amber-500 px-3 py-1.5 text-xs font-semibold text-slate-950 hover:bg-amber-400"
         >
           + דווח מכירה
         </button>
@@ -83,7 +83,7 @@ export function SalesList({ sales, onChange }: Props) {
                   </span>
                   {hasReturn && (
                     <span
-                      className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                      className={`rounded-md px-2 py-0.5 text-[11px] font-medium ${
                         sale.returnReason === 'restocked'
                           ? 'bg-emerald-500/20 text-emerald-300'
                           : 'bg-rose-500/20 text-rose-300'
@@ -153,13 +153,13 @@ export function SalesList({ sales, onChange }: Props) {
                         <span className="text-xs text-slate-400">לקוח החזיר / זיכוי:</span>
                         <button
                           onClick={() => setReturnedQuantity(sale, sale.quantity)}
-                          className="rounded-full border border-white/10 px-3 py-1 text-xs text-slate-300 hover:bg-white/5"
+                          className="rounded-md border border-white/10 px-3 py-1 text-xs text-slate-300 hover:bg-white/5"
                         >
                           החזרת הכל ({sale.quantity})
                         </button>
                         <button
                           onClick={() => setReturnedQuantity(sale, 1)}
-                          className="rounded-full border border-white/10 px-3 py-1 text-xs text-slate-300 hover:bg-white/5"
+                          className="rounded-md border border-white/10 px-3 py-1 text-xs text-slate-300 hover:bg-white/5"
                         >
                           החזרת חלק...
                         </button>
@@ -198,7 +198,7 @@ export function SalesList({ sales, onChange }: Props) {
                           <span className="text-xs text-slate-400">מה קורה לכמות הזו?</span>
                           <button
                             onClick={() => setReturnReason(sale, 'restocked')}
-                            className={`rounded-full border px-3 py-1 text-xs ${
+                            className={`rounded-md border px-3 py-1 text-xs ${
                               sale.returnReason === 'restocked'
                                 ? 'border-emerald-800 bg-emerald-950/30 text-emerald-300'
                                 : 'border-white/10 text-slate-400 hover:bg-emerald-500/10'
@@ -208,7 +208,7 @@ export function SalesList({ sales, onChange }: Props) {
                           </button>
                           <button
                             onClick={() => setReturnReason(sale, 'damaged')}
-                            className={`rounded-full border px-3 py-1 text-xs ${
+                            className={`rounded-md border px-3 py-1 text-xs ${
                               sale.returnReason === 'damaged'
                                 ? 'border-rose-800 bg-rose-950/30 text-rose-300'
                                 : 'border-white/10 text-slate-400 hover:bg-rose-500/10'
