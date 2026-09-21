@@ -32,6 +32,7 @@ export interface Shipment {
 
 export interface Product {
   id: string
+  sku: string
   name: string
   category: string
   purchasePricePerUnit: number

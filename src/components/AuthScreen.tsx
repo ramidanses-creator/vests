@@ -1,10 +1,10 @@
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth'
+import { createUserWithEmailAndPassword, sendPasswordResetEmail, signInWithEmailAndPassword } from 'firebase/auth'
 import { doc, getDoc, setDoc } from 'firebase/firestore'
 import { useState } from 'react'
 import { auth, db } from '../firebase'
 
 const MAX_ATTEMPTS = 4
-const CONSOLE_LINK = 'https://console.firebase.google.com/project/comers-5e927/firestore/data/~2Flogin_attempts'
+const LOCK_DURATION_MS = 30 * 60 * 1000
 
 function translateError(code: string): string {
   switch (code) {
@@ -28,29 +28,27 @@ function emailKey(email: string): string {
   return email.trim().toLowerCase()
 }
 
-async function isLocked(key: string): Promise<boolean> {
+async function checkLock(key: string): Promise<number | null> {
   const snap = await getDoc(doc(db, 'login_attempts', key))
-  return snap.exists() && snap.data().locked === true
+  if (!snap.exists()) return null
+  const lockedUntil = snap.data().lockedUntil as number | null | undefined
+  if (lockedUntil && lockedUntil > Date.now()) return lockedUntil
+  return null
 }
 
-async function recordFailedAttempt(key: string): Promise<{ locked: boolean; attempts: number }> {
+async function recordFailedAttempt(key: string): Promise<{ lockedUntil: number | null; attempts: number }> {
   const ref = doc(db, 'login_attempts', key)
   const snap = await getDoc(ref)
   const current = snap.exists() ? ((snap.data().failedCount as number) ?? 0) : 0
   const next = current + 1
-  const locked = next >= MAX_ATTEMPTS
-  try {
-    await setDoc(ref, { failedCount: next, locked })
-  } catch {
-    // if the doc is already locked, the security rules will reject this write — treat as locked
-    return { locked: true, attempts: next }
-  }
-  return { locked, attempts: next }
+  const lockedUntil = next >= MAX_ATTEMPTS ? Date.now() + LOCK_DURATION_MS : null
+  await setDoc(ref, { failedCount: next, lockedUntil })
+  return { lockedUntil, attempts: next }
 }
 
 async function resetAttempts(key: string) {
   try {
-    await setDoc(doc(db, 'login_attempts', key), { failedCount: 0, locked: false })
+    await setDoc(doc(db, 'login_attempts', key), { failedCount: 0, lockedUntil: null })
   } catch {
     // best-effort — not critical if this fails
   }
@@ -61,19 +59,42 @@ export function AuthScreen() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
-  const [locked, setLocked] = useState(false)
+  const [lockedUntil, setLockedUntil] = useState<number | null>(null)
   const [busy, setBusy] = useState(false)
+  const [resetSent, setResetSent] = useState(false)
+
+  async function handleForgotPassword() {
+    if (!email) {
+      setError('הזינו קודם את כתובת האימייל למעלה.')
+      return
+    }
+    setError(null)
+    setResetSent(false)
+    setBusy(true)
+    try {
+      await sendPasswordResetEmail(auth, email)
+      await resetAttempts(emailKey(email))
+      setLockedUntil(null)
+      setResetSent(true)
+    } catch (err) {
+      const code = (err as { code?: string }).code ?? ''
+      setError(translateError(code))
+    } finally {
+      setBusy(false)
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
-    setLocked(false)
+    setLockedUntil(null)
     setBusy(true)
     const key = emailKey(email)
     try {
       if (mode === 'signin') {
-        if (await isLocked(key)) {
-          setLocked(true)
+        const lockUntil = await checkLock(key)
+        if (lockUntil) {
+          setLockedUntil(lockUntil)
           return
         }
         try {
@@ -83,10 +104,10 @@ export function AuthScreen() {
           const code = (err as { code?: string }).code ?? ''
           if (code === 'auth/wrong-password' || code === 'auth/invalid-credential' || code === 'auth/user-not-found') {
             const result = await recordFailedAttempt(key)
-            if (result.locked) {
-              setLocked(true)
+            if (result.lockedUntil) {
+              setLockedUntil(result.lockedUntil)
             } else {
-              setError(`${translateError(code)} נותרו ${MAX_ATTEMPTS - result.attempts} ניסיונות לפני נעילה.`)
+              setError(`${translateError(code)} נותרו ${MAX_ATTEMPTS - result.attempts} ניסיונות לפני נעילה זמנית.`)
             }
           } else {
             setError(translateError(code))
@@ -139,19 +160,17 @@ export function AuthScreen() {
           />
         </label>
 
-        {locked && (
-          <div className="rounded-lg border border-rose-800/50 bg-rose-500/10 p-3 text-xs text-rose-300">
-            <p>החשבון נעול עקב {MAX_ATTEMPTS} ניסיונות סיסמה שגויים.</p>
-            <p className="mt-1">
-              כדי לפתוח: כתבו הודעה בצ׳אט עם Claude, ותקבלו הנחיה למחיקת מסמך הנעילה תחת{' '}
-              <a href={CONSOLE_LINK} target="_blank" rel="noreferrer" className="underline hover:text-rose-200">
-                Firestore → login_attempts
-              </a>{' '}
-              בקונסולת Firebase.
-            </p>
-          </div>
+        {lockedUntil && (
+          <p className="rounded-lg border border-rose-800/50 bg-rose-500/10 p-3 text-xs text-rose-300">
+            נעול עקב {MAX_ATTEMPTS} ניסיונות כושלים. יש להמתין 30 דקות או לאפס סיסמה.
+          </p>
         )}
-        {!locked && error && <p className="text-xs text-rose-400">{error}</p>}
+        {!lockedUntil && error && <p className="text-xs text-rose-400">{error}</p>}
+        {resetSent && (
+          <p className="rounded-lg border border-emerald-800/50 bg-emerald-500/10 p-3 text-xs text-emerald-300">
+            נשלח מייל לאיפוס סיסמה. לאחר שתקבעו סיסמה חדשה, תוכלו להתחבר.
+          </p>
+        )}
 
         <button
           type="submit"
@@ -166,12 +185,24 @@ export function AuthScreen() {
           onClick={() => {
             setMode((m) => (m === 'signin' ? 'signup' : 'signin'))
             setError(null)
-            setLocked(false)
+            setLockedUntil(null)
+            setResetSent(false)
           }}
           className="text-xs text-slate-400 hover:text-slate-200"
         >
           {mode === 'signin' ? 'אין לכם חשבון? הרשמה' : 'יש לכם חשבון? התחברות'}
         </button>
+
+        {mode === 'signin' && (
+          <button
+            type="button"
+            onClick={handleForgotPassword}
+            disabled={busy}
+            className="text-xs text-slate-500 hover:text-slate-300 disabled:cursor-not-allowed"
+          >
+            שכחתי סיסמה
+          </button>
+        )}
       </form>
     </div>
   )

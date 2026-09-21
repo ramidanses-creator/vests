@@ -46,6 +46,7 @@ export function ProductCard({
           <span className="text-slate-500">{expanded ? '︿' : '﹀'}</span>
         </div>
         <div className="flex flex-wrap items-center gap-1.5 text-xs">
+          <span className="rounded-md bg-white/5 px-2 py-0.5 font-mono text-slate-400">{product.sku}</span>
           {product.category && (
             <span className="rounded-md bg-white/10 px-2 py-0.5 text-slate-200">{product.category}</span>
           )}

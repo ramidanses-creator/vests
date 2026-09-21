@@ -14,7 +14,7 @@ import { SalesCenter } from './components/SalesCenter'
 import { ShipmentSplitCalculator } from './components/ShipmentSplitCalculator'
 import { SummaryPanel } from './components/SummaryPanel'
 import { SwipeViews } from './components/SwipeViews'
-import { createDefaultProduct } from './defaultProduct'
+import { createDefaultProduct, generateSku } from './defaultProduct'
 import { auth, db } from './firebase'
 import { useAuthUser } from './hooks/useAuthUser'
 import { useOfficialRate } from './hooks/useOfficialRate'
@@ -26,6 +26,15 @@ const SEEN_REMOTE_IDS_KEY = 'import-tracker-seen-remote-ids'
 
 type View = 'active' | 'standby' | 'inventory'
 const VIEW_ORDER: View[] = ['active', 'standby', 'inventory']
+
+type UtilityId = 'inventory' | 'split' | 'sales' | 'backup' | 'currency'
+const UTILITIES: { id: UtilityId; label: string; icon: string }[] = [
+  { id: 'inventory', label: 'מלאי לפי קטגוריה', icon: '📦' },
+  { id: 'split', label: 'פיצול משלוח/מכס', icon: '✂️' },
+  { id: 'sales', label: 'מכירות והחזרות', icon: '🧾' },
+  { id: 'backup', label: 'גיבוי ושחזור', icon: '💾' },
+  { id: 'currency', label: 'המרת מטבע', icon: '💱' },
+]
 
 function loadSeenRemoteIds(): Set<string> {
   try {
@@ -62,6 +71,7 @@ function normalizeProduct(raw: Partial<Product> & { quantityImported?: number; h
   return {
     ...fallback,
     ...raw,
+    sku: raw.sku ?? generateSku(),
     category: raw.category ?? fallback.category,
     purchasePricePerUnit: raw.purchasePricePerUnit ?? fallback.purchasePricePerUnit,
     purchaseCurrency: raw.purchaseCurrency ?? fallback.purchaseCurrency,
@@ -134,6 +144,7 @@ function AppContent({ uid, userEmail }: AppContentProps) {
   const [lastAddedId, setLastAddedId] = useState<string | null>(null)
   const [chatOpen, setChatOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [activeUtility, setActiveUtility] = useState<UtilityId | null>(null)
   const [cloudLoaded, setCloudLoaded] = useState(false)
   const [previousLoginAt, setPreviousLoginAt] = useState<number | null>(null)
   const { officialRate } = useOfficialRate()
@@ -223,6 +234,21 @@ function AppContent({ uid, userEmail }: AppContentProps) {
     setLastAddedId(product.id)
   }
 
+  function quickNewOrder() {
+    addProduct()
+    setView('active')
+    setActiveUtility(null)
+  }
+
+  function quickSale() {
+    setActiveUtility('sales')
+  }
+
+  function quickArrival() {
+    setView('inventory')
+    setActiveUtility(null)
+  }
+
   function removeProduct(id: string) {
     const target = products.find((p) => p.id === id)
     setProducts((prev) => prev.filter((p) => p.id !== id))
@@ -252,7 +278,12 @@ function AppContent({ uid, userEmail }: AppContentProps) {
   const filteredProducts = useMemo(() => {
     const q = searchQuery.trim().toLowerCase()
     if (!q) return products
-    return products.filter((p) => p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q))
+    return products.filter(
+      (p) =>
+        p.name.toLowerCase().includes(q) ||
+        p.category.toLowerCase().includes(q) ||
+        p.sku.toLowerCase().includes(q),
+    )
   }, [products, searchQuery])
   const categoryOptions = useMemo(
     () => Array.from(new Set(products.map((p) => p.category.trim()).filter(Boolean))).sort((a, b) => a.localeCompare(b, 'he')),
@@ -334,25 +365,64 @@ function AppContent({ uid, userEmail }: AppContentProps) {
       <main className="mx-auto mt-6 flex max-w-5xl flex-col gap-6 px-4">
         <SummaryPanel products={products} usdToIlsRate={officialRate} />
 
-        <CollapsibleSection title="בדיקת מלאי לפי קטגוריה" accent="violet">
-          <InventoryByCategory products={products} usdToIlsRate={officialRate} />
-        </CollapsibleSection>
+        <div className="grid grid-cols-3 gap-2">
+          <button
+            onClick={quickNewOrder}
+            className="flex flex-col items-center gap-1 rounded-xl border border-white/10 bg-teal-950/20 py-4 hover:bg-teal-950/40"
+          >
+            <span className="text-2xl">➕</span>
+            <span className="text-xs font-medium text-teal-200">הזמנה חדשה</span>
+          </button>
+          <button
+            onClick={quickSale}
+            className="flex flex-col items-center gap-1 rounded-xl border border-white/10 bg-amber-950/20 py-4 hover:bg-amber-950/40"
+          >
+            <span className="text-2xl">🧾</span>
+            <span className="text-xs font-medium text-amber-200">מכירה</span>
+          </button>
+          <button
+            onClick={quickArrival}
+            className="flex flex-col items-center gap-1 rounded-xl border border-white/10 bg-sky-950/20 py-4 hover:bg-sky-950/40"
+          >
+            <span className="text-2xl">🚚</span>
+            <span className="text-xs font-medium text-sky-200">הגעת סחורה</span>
+          </button>
+        </div>
 
-        <CollapsibleSection title="פיצול משלוח/מכס משותף בין מוצרים" accent="sky">
-          <ShipmentSplitCalculator products={products} onChange={updateProduct} usdToIlsRate={officialRate} />
-        </CollapsibleSection>
+        <div className="flex flex-col gap-2">
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {UTILITIES.map((u) => (
+              <button
+                key={u.id}
+                onClick={() => setActiveUtility((prev) => (prev === u.id ? null : u.id))}
+                className={`flex shrink-0 flex-col items-center gap-1 rounded-lg border px-3 py-2 ${
+                  activeUtility === u.id
+                    ? 'border-teal-500 bg-teal-950/30'
+                    : 'border-white/10 bg-white/[0.02] hover:bg-white/5'
+                }`}
+              >
+                <span className="text-base">{u.icon}</span>
+                <span className="whitespace-nowrap text-[11px] text-slate-300">{u.label}</span>
+              </button>
+            ))}
+          </div>
 
-        <CollapsibleSection title="מכירות והחזרות" accent="rose">
-          <SalesCenter products={filteredProducts} onChange={updateProduct} usdToIlsRate={officialRate} />
-        </CollapsibleSection>
-
-        <CollapsibleSection title="גיבוי ושחזור" accent="teal">
-          <BackupTools products={products} deleted={deleted} onImport={importBackup} />
-        </CollapsibleSection>
-
-        <CollapsibleSection title="מחשבון המרה דולר / שקל" accent="amber">
-          <CurrencyConverter />
-        </CollapsibleSection>
+          {activeUtility && (
+            <div className="max-h-[60vh] overflow-y-auto rounded-xl border border-white/10 bg-[#1a1b20] p-4">
+              {activeUtility === 'inventory' && <InventoryByCategory products={products} usdToIlsRate={officialRate} />}
+              {activeUtility === 'split' && (
+                <ShipmentSplitCalculator products={products} onChange={updateProduct} usdToIlsRate={officialRate} />
+              )}
+              {activeUtility === 'sales' && (
+                <SalesCenter products={filteredProducts} onChange={updateProduct} usdToIlsRate={officialRate} />
+              )}
+              {activeUtility === 'backup' && (
+                <BackupTools products={products} deleted={deleted} onImport={importBackup} />
+              )}
+              {activeUtility === 'currency' && <CurrencyConverter />}
+            </div>
+          )}
+        </div>
 
         {chatOpen ? (
           <ChatEntry
@@ -373,7 +443,7 @@ function AppContent({ uid, userEmail }: AppContentProps) {
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="חיפוש מוצר לפי שם או קטגוריה"
+          placeholder="חיפוש מוצר לפי שם, קטגוריה או מק״ט"
           className="rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-100 focus:border-teal-500 focus:outline-none"
         />
 

@@ -46,6 +46,7 @@ export function InventoryPage({ products, onChange, usdToIlsRate }: Props) {
               }`}
             >
               <h3 className="line-clamp-2 text-sm font-semibold text-slate-100">{product.name || 'מוצר ללא שם'}</h3>
+              <span className="font-mono text-[10px] text-slate-500">{product.sku}</span>
               <div className="flex flex-wrap gap-x-2 gap-y-0.5 text-[11px] text-slate-400">
                 <span>
                   הוזמן: <span className="font-semibold text-slate-200">{totals.quantityImported}</span>
