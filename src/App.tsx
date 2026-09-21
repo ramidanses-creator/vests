@@ -145,6 +145,7 @@ function AppContent({ uid, userEmail }: AppContentProps) {
   const [chatOpen, setChatOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [activeUtility, setActiveUtility] = useState<UtilityId | null>(null)
+  const [profileOpen, setProfileOpen] = useState(false)
   const productsViewRef = useRef<HTMLDivElement>(null)
   const [cloudLoaded, setCloudLoaded] = useState(false)
   const [previousLoginAt, setPreviousLoginAt] = useState<number | null>(null)
@@ -347,17 +348,30 @@ function AppContent({ uid, userEmail }: AppContentProps) {
   return (
     <div className="min-h-screen pb-16" dir="rtl">
       <header className="sticky top-0 z-10 border-b border-white/10 bg-[#0f1117]/90 backdrop-blur">
-        <div className="mx-auto flex max-w-5xl flex-wrap items-start justify-end gap-2 px-4 py-3">
-          <div className="flex flex-col items-end gap-1 text-xs text-slate-500">
-            {userEmail && <span>{userEmail}</span>}
-            <span>
-              {previousLoginAt
-                ? `התחברות קודמת: ${new Date(previousLoginAt).toLocaleString('he-IL')}`
-                : 'זו הכניסה הראשונה שלך'}
-            </span>
-            <button onClick={() => signOut(auth)} className="text-slate-400 hover:text-slate-200">
-              התנתקות
+        <div className="mx-auto flex max-w-5xl items-center justify-end px-4 py-3">
+          <div className="relative">
+            <button
+              onClick={() => setProfileOpen((v) => !v)}
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-teal-500 text-sm font-bold text-slate-950 hover:bg-teal-400"
+            >
+              {(userEmail ?? '?').charAt(0).toUpperCase()}
             </button>
+            {profileOpen && (
+              <div className="absolute left-0 top-11 z-20 w-64 rounded-lg border border-white/10 bg-[#1a1b20] p-3 text-xs text-slate-400 shadow-lg">
+                {userEmail && <p className="mb-1 break-all text-slate-200">{userEmail}</p>}
+                <p className="mb-2">
+                  {previousLoginAt
+                    ? `התחברות קודמת: ${new Date(previousLoginAt).toLocaleString('he-IL')}`
+                    : 'זו הכניסה הראשונה שלך'}
+                </p>
+                <button
+                  onClick={() => signOut(auth)}
+                  className="w-full rounded-md border border-white/10 py-1.5 text-center text-slate-300 hover:bg-white/5"
+                >
+                  התנתקות
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </header>
