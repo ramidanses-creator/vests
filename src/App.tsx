@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { BackupTools } from './components/BackupTools'
 import { ChatEntry } from './components/ChatEntry'
 import { CollapsibleSection } from './components/CollapsibleSection'
 import { CurrencyConverter } from './components/CurrencyConverter'
@@ -122,6 +123,7 @@ export default function App() {
   const [view, setView] = useState<View>('active')
   const [lastAddedId, setLastAddedId] = useState<string | null>(null)
   const [chatOpen, setChatOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
   const { officialRate } = useOfficialRate()
 
   useEffect(() => {
@@ -191,7 +193,17 @@ export default function App() {
     setDeleted((prev) => prev.filter((d) => d.product.id !== id))
   }
 
+  function importBackup(data: { products: Partial<Product>[]; deleted: { product: Partial<Product>; deletedAt: string }[] }) {
+    setProducts(data.products.map(normalizeProduct))
+    setDeleted(data.deleted.map((d) => ({ product: normalizeProduct(d.product), deletedAt: d.deletedAt })))
+  }
+
   const standbyCount = useMemo(() => products.filter((p) => p.status === 'standby').length, [products])
+  const filteredProducts = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase()
+    if (!q) return products
+    return products.filter((p) => p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q))
+  }, [products, searchQuery])
   const categoryOptions = useMemo(
     () => Array.from(new Set(products.map((p) => p.category.trim()).filter(Boolean))).sort((a, b) => a.localeCompare(b, 'he')),
     [products],
@@ -207,14 +219,18 @@ export default function App() {
   function renderViewPanel(index: number) {
     const v = VIEW_ORDER[index]
     if (v === 'inventory') {
-      return <InventoryPage products={products} onChange={updateProduct} usdToIlsRate={officialRate} />
+      return <InventoryPage products={filteredProducts} onChange={updateProduct} usdToIlsRate={officialRate} />
     }
-    const list = products.filter((p) => p.status === v)
+    const list = filteredProducts.filter((p) => p.status === v)
     return (
       <div className="flex flex-col gap-6">
         {list.length === 0 && (
           <p className="rounded-2xl border border-dashed border-white/15 bg-white/[0.03] p-6 text-center text-sm text-slate-400">
-            {v === 'active' ? 'אין מוצרים בהזמנה החדשה כרגע.' : 'אין מוצרים רשומים במערכת כרגע.'}
+            {searchQuery.trim()
+              ? 'לא נמצאו מוצרים תואמים לחיפוש.'
+              : v === 'active'
+                ? 'אין מוצרים בהזמנה החדשה כרגע.'
+                : 'אין מוצרים רשומים במערכת כרגע.'}
           </p>
         )}
         {list.map((product) => (
@@ -266,7 +282,11 @@ export default function App() {
         </CollapsibleSection>
 
         <CollapsibleSection title="מכירות והחזרות" icon="🧾" accent="rose">
-          <SalesCenter products={products} onChange={updateProduct} usdToIlsRate={officialRate} />
+          <SalesCenter products={filteredProducts} onChange={updateProduct} usdToIlsRate={officialRate} />
+        </CollapsibleSection>
+
+        <CollapsibleSection title="גיבוי ושחזור" icon="💾" accent="teal">
+          <BackupTools products={products} deleted={deleted} onImport={importBackup} />
         </CollapsibleSection>
 
         <CollapsibleSection title="מחשבון המרה דולר / שקל" icon="💱" accent="amber">
@@ -287,6 +307,14 @@ export default function App() {
             💬 הוספת מוצר בצ׳אט
           </button>
         )}
+
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="🔍 חיפוש מוצר לפי שם או קטגוריה"
+          className="rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-100 focus:border-teal-500 focus:outline-none"
+        />
 
         <div className="flex flex-wrap gap-2">
           <button
