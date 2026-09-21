@@ -1,4 +1,7 @@
+import { doc, getDoc, setDoc } from 'firebase/firestore'
+import { signOut } from 'firebase/auth'
 import { useEffect, useMemo, useState } from 'react'
+import { AuthScreen } from './components/AuthScreen'
 import { BackupTools } from './components/BackupTools'
 import { ChatEntry } from './components/ChatEntry'
 import { CollapsibleSection } from './components/CollapsibleSection'
@@ -12,6 +15,8 @@ import { ShipmentSplitCalculator } from './components/ShipmentSplitCalculator'
 import { SummaryPanel } from './components/SummaryPanel'
 import { SwipeViews } from './components/SwipeViews'
 import { createDefaultProduct } from './defaultProduct'
+import { auth, db } from './firebase'
+import { useAuthUser } from './hooks/useAuthUser'
 import { useOfficialRate } from './hooks/useOfficialRate'
 import { PRODUCT_STATUS_LABELS, type DeletedProduct, type Product } from './types'
 
@@ -114,7 +119,12 @@ function saveDeleted(deleted: DeletedProduct[]) {
   }
 }
 
-export default function App() {
+interface AppContentProps {
+  uid: string
+  userEmail: string | null
+}
+
+function AppContent({ uid, userEmail }: AppContentProps) {
   const [products, setProducts] = useState<Product[]>(() => {
     const stored = loadProducts()
     return stored.length > 0 ? stored : [createDefaultProduct()]
@@ -124,6 +134,7 @@ export default function App() {
   const [lastAddedId, setLastAddedId] = useState<string | null>(null)
   const [chatOpen, setChatOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [cloudLoaded, setCloudLoaded] = useState(false)
   const { officialRate } = useOfficialRate()
 
   useEffect(() => {
@@ -133,6 +144,36 @@ export default function App() {
   useEffect(() => {
     saveDeleted(deleted)
   }, [deleted])
+
+  // Load this user's data from Firestore once on sign-in.
+  useEffect(() => {
+    setCloudLoaded(false)
+    let cancelled = false
+    getDoc(doc(db, 'users', uid)).then((snap) => {
+      if (cancelled) return
+      if (snap.exists()) {
+        const data = snap.data() as {
+          products?: Partial<Product>[]
+          deleted?: { product: Partial<Product>; deletedAt: string }[]
+        }
+        if (data.products) setProducts(data.products.map(normalizeProduct))
+        if (data.deleted) setDeleted(data.deleted.map((d) => ({ product: normalizeProduct(d.product), deletedAt: d.deletedAt })))
+      }
+      setCloudLoaded(true)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [uid])
+
+  // Push local changes to Firestore once the cloud data has finished loading,
+  // so a fresh sign-in doesn't overwrite cloud data with stale local state.
+  useEffect(() => {
+    if (!cloudLoaded) return
+    setDoc(doc(db, 'users', uid), { products, deleted, updatedAt: Date.now() }).catch(() => {
+      // offline or blocked — localStorage still has the data
+    })
+  }, [uid, cloudLoaded, products, deleted])
 
   useEffect(() => {
     fetch('products.json')
@@ -260,11 +301,19 @@ export default function App() {
   return (
     <div className="min-h-screen pb-16" dir="rtl">
       <header className="sticky top-0 z-10 border-b border-white/10 bg-[#0f1117]/90 backdrop-blur">
-        <div className="mx-auto flex max-w-5xl flex-col gap-1 px-4 py-4 sm:py-5">
-          <h1 className="text-xl font-bold text-slate-100 sm:text-2xl">מעקב הזמנות ורווחים</h1>
-          <p className="text-sm text-slate-400">
-            רשמו לכל מוצר את כל ההוצאות עד הגעתו לארץ ואת המכירות שלו — האפליקציה תחשב עלות ליחידה ורווח בפועל.
-          </p>
+        <div className="mx-auto flex max-w-5xl flex-wrap items-start justify-between gap-2 px-4 py-4 sm:py-5">
+          <div className="flex flex-col gap-1">
+            <h1 className="text-xl font-bold text-slate-100 sm:text-2xl">מעקב הזמנות ורווחים</h1>
+            <p className="text-sm text-slate-400">
+              רשמו לכל מוצר את כל ההוצאות עד הגעתו לארץ ואת המכירות שלו — האפליקציה תחשב עלות ליחידה ורווח בפועל.
+            </p>
+          </div>
+          <div className="flex flex-col items-end gap-1 text-xs text-slate-500">
+            {userEmail && <span>{userEmail}</span>}
+            <button onClick={() => signOut(auth)} className="text-slate-400 hover:text-slate-200">
+              התנתקות
+            </button>
+          </div>
         </div>
       </header>
 
@@ -361,4 +410,13 @@ export default function App() {
       </main>
     </div>
   )
+}
+
+export default function App() {
+  const { user, loading } = useAuthUser()
+
+  if (loading) return null
+  if (!user) return <AuthScreen />
+
+  return <AppContent uid={user.uid} userEmail={user.email} />
 }
