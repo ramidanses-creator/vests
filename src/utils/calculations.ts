@@ -25,8 +25,11 @@ export function calculateProductTotals(product: Product, fallbackUsdToIlsRate: n
   const suggestedSalePrice = costPerUnit * (1 + product.targetProfitPercent / 100)
   const expectedProfit = (suggestedSalePrice - costPerUnit) * quantityImported
 
-  const quantitySold = product.sales.reduce((sum, s) => sum + s.quantity, 0)
-  const totalRevenue = product.sales.reduce((sum, s) => sum + s.quantity * s.pricePerUnit, 0)
+  const quantitySold = product.sales.reduce(
+    (sum, s) => sum + (s.returned && s.returnReason === 'restocked' ? 0 : s.quantity),
+    0,
+  )
+  const totalRevenue = product.sales.reduce((sum, s) => sum + (s.returned ? 0 : s.quantity * s.pricePerUnit), 0)
   const totalCostOfSold = quantitySold * costPerUnit
   const totalProfit = totalRevenue - totalCostOfSold
   const profitPerUnit = quantitySold > 0 ? totalProfit / quantitySold : 0

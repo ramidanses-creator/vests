@@ -12,11 +12,15 @@ export interface Expense {
   currency: Currency
 }
 
+export type ReturnReason = 'restocked' | 'damaged'
+
 export interface Sale {
   id: string
   date: string
   quantity: number
   pricePerUnit: number
+  returned: boolean
+  returnReason: ReturnReason | null
 }
 
 export interface Shipment {

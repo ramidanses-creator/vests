@@ -62,7 +62,11 @@ function normalizeProduct(raw: Partial<Product> & { quantityImported?: number; h
     status: raw.status ?? fallback.status,
     shipments,
     expenses: raw.expenses ?? fallback.expenses,
-    sales: raw.sales ?? fallback.sales,
+    sales: (raw.sales ?? fallback.sales).map((s) => ({
+      ...s,
+      returned: s.returned ?? false,
+      returnReason: s.returnReason ?? null,
+    })),
   }
 }
 
