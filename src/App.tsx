@@ -386,21 +386,21 @@ function AppContent({ uid, userEmail }: AppContentProps) {
           <div className="grid grid-cols-3 gap-2">
             <button
               onClick={quickNewOrder}
-              className="flex flex-col items-center gap-2 rounded-xl border border-white/10 bg-[#1a1b20] py-4 transition-colors hover:border-teal-700/60 hover:bg-teal-950/20"
+              className="flex min-h-[92px] flex-col items-center justify-center gap-2 rounded-xl border border-white/10 bg-[#1a1b20] p-2 text-center transition-colors hover:border-teal-700/60 hover:bg-teal-950/20"
             >
               <span className="flex h-10 w-10 items-center justify-center rounded-full bg-teal-500/15 text-lg">➕</span>
               <span className="text-xs font-medium text-slate-200">הזמנה חדשה</span>
             </button>
             <button
               onClick={quickSale}
-              className="flex flex-col items-center gap-2 rounded-xl border border-white/10 bg-[#1a1b20] py-4 transition-colors hover:border-amber-700/60 hover:bg-amber-950/20"
+              className="flex min-h-[92px] flex-col items-center justify-center gap-2 rounded-xl border border-white/10 bg-[#1a1b20] p-2 text-center transition-colors hover:border-amber-700/60 hover:bg-amber-950/20"
             >
               <span className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-500/15 text-lg">🧾</span>
               <span className="text-xs font-medium text-slate-200">מכירה</span>
             </button>
             <button
               onClick={quickArrival}
-              className="relative flex flex-col items-center gap-2 rounded-xl border border-white/10 bg-[#1a1b20] py-4 transition-colors hover:border-sky-700/60 hover:bg-sky-950/20"
+              className="relative flex min-h-[92px] flex-col items-center justify-center gap-2 rounded-xl border border-white/10 bg-[#1a1b20] p-2 text-center transition-colors hover:border-sky-700/60 hover:bg-sky-950/20"
             >
               {alertCount > 0 && (
                 <span className="absolute -top-1.5 left-3 flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">
@@ -415,19 +415,21 @@ function AppContent({ uid, userEmail }: AppContentProps) {
 
         <section className="flex flex-col gap-2">
           <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">כלים</h2>
-          <div className="flex gap-2 overflow-x-auto pb-1">
-            {UTILITIES.map((u) => (
+          <div className="grid grid-cols-4 gap-2">
+            {UTILITIES.map((u, i) => (
               <button
                 key={u.id}
                 onClick={() => setActiveUtility((prev) => (prev === u.id ? null : u.id))}
-                className={`flex shrink-0 flex-col items-center gap-1 rounded-lg border px-3 py-2 transition-colors ${
+                className={`flex min-h-[72px] flex-col items-center justify-center gap-1 rounded-lg border p-2 text-center transition-colors ${
+                  i === UTILITIES.length - 1 && UTILITIES.length % 4 === 1 ? 'col-span-4' : ''
+                } ${
                   activeUtility === u.id
                     ? 'border-teal-500 bg-teal-950/30'
                     : 'border-white/10 bg-white/[0.02] hover:bg-white/5'
                 }`}
               >
                 <span className="text-base">{u.icon}</span>
-                <span className="whitespace-nowrap text-[11px] text-slate-300">{u.label}</span>
+                <span className="text-[11px] leading-tight text-slate-300">{u.label}</span>
               </button>
             ))}
           </div>
