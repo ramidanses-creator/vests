@@ -348,12 +348,7 @@ function AppContent({ uid, userEmail }: AppContentProps) {
     <div className="min-h-screen pb-16" dir="rtl">
       <header className="sticky top-0 z-10 border-b border-white/10 bg-[#0f1117]/90 backdrop-blur">
         <div className="mx-auto flex max-w-5xl flex-wrap items-start justify-between gap-2 px-4 py-4 sm:py-5">
-          <div className="flex flex-col gap-1">
-            <h1 className="text-xl font-bold text-slate-100 sm:text-2xl">מעקב הזמנות ורווחים</h1>
-            <p className="text-sm text-slate-400">
-              רשמו לכל מוצר את כל ההוצאות עד הגעתו לארץ ואת המכירות שלו — האפליקציה תחשב עלות ליחידה ורווח בפועל.
-            </p>
-          </div>
+          <h1 className="text-xl font-bold text-slate-100 sm:text-2xl">מעקב הזמנות ורווחים</h1>
           <div className="flex flex-col items-end gap-1 text-xs text-slate-500">
             {userEmail && <span>{userEmail}</span>}
             <span>
