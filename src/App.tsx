@@ -1,6 +1,6 @@
 import { doc, getDoc, setDoc } from 'firebase/firestore'
 import { signOut } from 'firebase/auth'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { AuthScreen } from './components/AuthScreen'
 import { BackupTools } from './components/BackupTools'
 import { ChatEntry } from './components/ChatEntry'
@@ -145,6 +145,7 @@ function AppContent({ uid, userEmail }: AppContentProps) {
   const [chatOpen, setChatOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [activeUtility, setActiveUtility] = useState<UtilityId | null>(null)
+  const productsViewRef = useRef<HTMLDivElement>(null)
   const [cloudLoaded, setCloudLoaded] = useState(false)
   const [previousLoginAt, setPreviousLoginAt] = useState<number | null>(null)
   const { officialRate } = useOfficialRate()
@@ -238,6 +239,11 @@ function AppContent({ uid, userEmail }: AppContentProps) {
     addProduct()
     setView('active')
     setActiveUtility(null)
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        productsViewRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      })
+    })
   }
 
   function quickSale() {
@@ -447,7 +453,7 @@ function AppContent({ uid, userEmail }: AppContentProps) {
           className="rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-100 focus:border-teal-500 focus:outline-none"
         />
 
-        <div className="flex flex-wrap gap-2">
+        <div ref={productsViewRef} className="flex flex-wrap gap-2 scroll-mt-20">
           <button
             onClick={() => setView('active')}
             className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
