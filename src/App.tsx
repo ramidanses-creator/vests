@@ -476,10 +476,10 @@ function AppContent({ uid, userEmail }: AppContentProps) {
             className="rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-100 focus:border-teal-500 focus:outline-none"
           />
 
-          <div ref={productsViewRef} className="flex flex-wrap gap-2 scroll-mt-20">
+          <div ref={productsViewRef} className="grid grid-cols-3 gap-2 scroll-mt-20">
           <button
             onClick={() => setView('active')}
-            className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
+            className={`truncate rounded-md px-2 py-1.5 text-sm font-medium transition-colors ${
               view === 'active'
                 ? 'bg-teal-500 text-slate-950 shadow shadow-teal-500/30'
                 : 'bg-white/5 text-slate-300 hover:bg-white/10'
@@ -489,7 +489,7 @@ function AppContent({ uid, userEmail }: AppContentProps) {
           </button>
           <button
             onClick={() => setView('standby')}
-            className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
+            className={`truncate rounded-md px-2 py-1.5 text-sm font-medium transition-colors ${
               view === 'standby'
                 ? 'bg-violet-500 text-slate-950 shadow shadow-violet-500/30'
                 : 'bg-white/5 text-slate-300 hover:bg-white/10'
@@ -499,13 +499,13 @@ function AppContent({ uid, userEmail }: AppContentProps) {
           </button>
           <button
             onClick={() => setView('inventory')}
-            className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
+            className={`truncate rounded-md px-2 py-1.5 text-sm font-medium transition-colors ${
               view === 'inventory'
                 ? 'bg-amber-400 text-slate-950 shadow shadow-amber-400/30'
                 : 'bg-white/5 text-slate-300 hover:bg-white/10'
             }`}
           >
-            ניהול מלאי {alertCount > 0 ? `⚠ ${alertCount}` : ''}
+            ניהול מלאי {alertCount > 0 ? `⚠${alertCount}` : ''}
           </button>
           </div>
 
