@@ -55,6 +55,21 @@ export function calculateProductTotals(product: Product, fallbackUsdToIlsRate: n
   }
 }
 
+const LOW_STOCK_THRESHOLD = 5
+
+export function isProductLate(product: Product): boolean {
+  const today = new Date().toISOString().slice(0, 10)
+  return product.shipments.some((s) => !s.arrived && s.expectedDate && s.expectedDate < today)
+}
+
+export function countInventoryAlerts(products: Product[], usdToIlsRate: number | null): number {
+  return products.reduce((count, product) => {
+    const totals = calculateProductTotals(product, usdToIlsRate)
+    const lowOrOut = totals.quantityRemaining <= LOW_STOCK_THRESHOLD
+    return count + (lowOrOut || isProductLate(product) ? 1 : 0)
+  }, 0)
+}
+
 export function formatCurrency(value: number): string {
   return new Intl.NumberFormat('he-IL', { style: 'currency', currency: 'ILS', maximumFractionDigits: 2 }).format(
     Number.isFinite(value) ? value : 0,

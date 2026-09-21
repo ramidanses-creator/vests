@@ -19,6 +19,7 @@ import { auth, db } from './firebase'
 import { useAuthUser } from './hooks/useAuthUser'
 import { useOfficialRate } from './hooks/useOfficialRate'
 import { PRODUCT_STATUS_LABELS, type DeletedProduct, type Product } from './types'
+import { countInventoryAlerts } from './utils/calculations'
 
 const STORAGE_KEY = 'import-tracker-products'
 const TRASH_KEY = 'import-tracker-deleted-products'
@@ -282,6 +283,7 @@ function AppContent({ uid, userEmail }: AppContentProps) {
   }
 
   const standbyCount = useMemo(() => products.filter((p) => p.status === 'standby').length, [products])
+  const alertCount = useMemo(() => countInventoryAlerts(products, officialRate), [products, officialRate])
   const filteredProducts = useMemo(() => {
     const q = searchQuery.trim().toLowerCase()
     if (!q) return products
@@ -379,37 +381,46 @@ function AppContent({ uid, userEmail }: AppContentProps) {
       <main className="mx-auto mt-6 flex max-w-5xl flex-col gap-6 px-4">
         <SummaryPanel products={products} usdToIlsRate={officialRate} />
 
-        <div className="grid grid-cols-3 gap-2">
-          <button
-            onClick={quickNewOrder}
-            className="flex flex-col items-center gap-1 rounded-xl border border-white/10 bg-teal-950/20 py-4 hover:bg-teal-950/40"
-          >
-            <span className="text-2xl">➕</span>
-            <span className="text-xs font-medium text-teal-200">הזמנה חדשה</span>
-          </button>
-          <button
-            onClick={quickSale}
-            className="flex flex-col items-center gap-1 rounded-xl border border-white/10 bg-amber-950/20 py-4 hover:bg-amber-950/40"
-          >
-            <span className="text-2xl">🧾</span>
-            <span className="text-xs font-medium text-amber-200">מכירה</span>
-          </button>
-          <button
-            onClick={quickArrival}
-            className="flex flex-col items-center gap-1 rounded-xl border border-white/10 bg-sky-950/20 py-4 hover:bg-sky-950/40"
-          >
-            <span className="text-2xl">🚚</span>
-            <span className="text-xs font-medium text-sky-200">הגעת סחורה</span>
-          </button>
-        </div>
+        <section className="flex flex-col gap-2">
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">פעולות מהירות</h2>
+          <div className="grid grid-cols-3 gap-2">
+            <button
+              onClick={quickNewOrder}
+              className="flex flex-col items-center gap-2 rounded-xl border border-white/10 bg-[#1a1b20] py-4 transition-colors hover:border-teal-700/60 hover:bg-teal-950/20"
+            >
+              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-teal-500/15 text-lg">➕</span>
+              <span className="text-xs font-medium text-slate-200">הזמנה חדשה</span>
+            </button>
+            <button
+              onClick={quickSale}
+              className="flex flex-col items-center gap-2 rounded-xl border border-white/10 bg-[#1a1b20] py-4 transition-colors hover:border-amber-700/60 hover:bg-amber-950/20"
+            >
+              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-500/15 text-lg">🧾</span>
+              <span className="text-xs font-medium text-slate-200">מכירה</span>
+            </button>
+            <button
+              onClick={quickArrival}
+              className="relative flex flex-col items-center gap-2 rounded-xl border border-white/10 bg-[#1a1b20] py-4 transition-colors hover:border-sky-700/60 hover:bg-sky-950/20"
+            >
+              {alertCount > 0 && (
+                <span className="absolute -top-1.5 left-3 flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">
+                  {alertCount}
+                </span>
+              )}
+              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-sky-500/15 text-lg">🚚</span>
+              <span className="text-xs font-medium text-slate-200">הגעת סחורה</span>
+            </button>
+          </div>
+        </section>
 
-        <div className="flex flex-col gap-2">
+        <section className="flex flex-col gap-2">
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">כלים</h2>
           <div className="flex gap-2 overflow-x-auto pb-1">
             {UTILITIES.map((u) => (
               <button
                 key={u.id}
                 onClick={() => setActiveUtility((prev) => (prev === u.id ? null : u.id))}
-                className={`flex shrink-0 flex-col items-center gap-1 rounded-lg border px-3 py-2 ${
+                className={`flex shrink-0 flex-col items-center gap-1 rounded-lg border px-3 py-2 transition-colors ${
                   activeUtility === u.id
                     ? 'border-teal-500 bg-teal-950/30'
                     : 'border-white/10 bg-white/[0.02] hover:bg-white/5'
@@ -436,7 +447,7 @@ function AppContent({ uid, userEmail }: AppContentProps) {
               {activeUtility === 'currency' && <CurrencyConverter />}
             </div>
           )}
-        </div>
+        </section>
 
         {chatOpen ? (
           <ChatEntry
@@ -453,15 +464,17 @@ function AppContent({ uid, userEmail }: AppContentProps) {
           </button>
         )}
 
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="חיפוש מוצר לפי שם, קטגוריה או מק״ט"
-          className="rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-100 focus:border-teal-500 focus:outline-none"
-        />
+        <section className="flex flex-col gap-2">
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">מוצרים</h2>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="חיפוש מוצר לפי שם, קטגוריה או מק״ט"
+            className="rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-100 focus:border-teal-500 focus:outline-none"
+          />
 
-        <div ref={productsViewRef} className="flex flex-wrap gap-2 scroll-mt-20">
+          <div ref={productsViewRef} className="flex flex-wrap gap-2 scroll-mt-20">
           <button
             onClick={() => setView('active')}
             className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
@@ -490,17 +503,18 @@ function AppContent({ uid, userEmail }: AppContentProps) {
                 : 'bg-white/5 text-slate-300 hover:bg-white/10'
             }`}
           >
-            ניהול מלאי
+            ניהול מלאי {alertCount > 0 ? `⚠ ${alertCount}` : ''}
           </button>
-        </div>
+          </div>
 
-        <SwipeViews
-          activeIndex={VIEW_ORDER.indexOf(view)}
-          count={VIEW_ORDER.length}
-          onChange={(i) => setView(VIEW_ORDER[i])}
-          renderPanel={renderViewPanel}
-          loop={false}
-        />
+          <SwipeViews
+            activeIndex={VIEW_ORDER.indexOf(view)}
+            count={VIEW_ORDER.length}
+            onChange={(i) => setView(VIEW_ORDER[i])}
+            renderPanel={renderViewPanel}
+            loop={false}
+          />
+        </section>
 
         <CollapsibleSection title="היסטוריית מחיקות" accent="rose">
           <DeletedProducts deleted={deleted} onRestore={restoreProduct} onPurge={purgeDeleted} />
