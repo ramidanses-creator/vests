@@ -19,7 +19,7 @@ export interface Sale {
   date: string
   quantity: number
   pricePerUnit: number
-  returned: boolean
+  returnedQuantity: number
   returnReason: ReturnReason | null
 }
 

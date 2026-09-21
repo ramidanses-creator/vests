@@ -17,12 +17,24 @@ export function SalesList({ sales, onChange }: Props) {
   function addSale() {
     onChange([
       ...sales,
-      { id: crypto.randomUUID(), date: today(), quantity: 1, pricePerUnit: 0, returned: false, returnReason: null },
+      { id: crypto.randomUUID(), date: today(), quantity: 1, pricePerUnit: 0, returnedQuantity: 0, returnReason: null },
     ])
   }
 
-  function setReturn(id: string, reason: ReturnReason | null) {
-    updateSale(id, reason === null ? { returned: false, returnReason: null } : { returned: true, returnReason: reason })
+  function setReturnReason(sale: Sale, reason: ReturnReason | null) {
+    if (reason === null) {
+      updateSale(sale.id, { returnedQuantity: 0, returnReason: null })
+    } else {
+      updateSale(sale.id, { returnReason: reason, returnedQuantity: sale.returnedQuantity || sale.quantity })
+    }
+  }
+
+  function setReturnedQuantity(sale: Sale, quantity: number) {
+    const clamped = Math.max(0, Math.min(quantity, sale.quantity))
+    updateSale(sale.id, {
+      returnedQuantity: clamped,
+      returnReason: clamped === 0 ? null : (sale.returnReason ?? 'damaged'),
+    })
   }
 
   function removeSale(id: string) {
@@ -44,7 +56,7 @@ export function SalesList({ sales, onChange }: Props) {
         {sales.map((sale) => (
           <div
             key={sale.id}
-            className={`flex flex-col gap-2 rounded-lg p-2 ${sale.returned ? 'bg-rose-500/5' : ''}`}
+            className={`flex flex-col gap-2 rounded-lg p-2 ${sale.returnedQuantity > 0 ? 'bg-rose-500/5' : ''}`}
           >
             <div className="flex flex-wrap items-center gap-2">
               <input
@@ -77,40 +89,48 @@ export function SalesList({ sales, onChange }: Props) {
               </button>
             </div>
             <div className="flex flex-wrap items-center gap-2 text-xs">
-              <span className="text-slate-500">החזרה:</span>
+              <span className="text-slate-500">זיכוי/החזרה:</span>
+              <input
+                type="text"
+                inputMode="decimal"
+                placeholder="כמות מוחזרת"
+                value={sale.returnedQuantity === 0 ? '' : sale.returnedQuantity}
+                onChange={(e) => setReturnedQuantity(sale, Number(e.target.value) || 0)}
+                className="w-20 rounded border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-slate-100"
+              />
+              <span className="text-slate-500">מתוך {sale.quantity}</span>
               <button
-                onClick={() => setReturn(sale.id, null)}
-                className={`rounded-full border px-2 py-1 ${
-                  !sale.returned
-                    ? 'border-white/10 bg-white/5 text-slate-300'
-                    : 'border-white/10 text-slate-500 hover:bg-white/5'
-                }`}
-              >
-                לא הוחזר
-              </button>
-              <button
-                onClick={() => setReturn(sale.id, 'restocked')}
-                className={`rounded-full border px-2 py-1 ${
-                  sale.returned && sale.returnReason === 'restocked'
+                onClick={() => setReturnReason(sale, 'restocked')}
+                disabled={sale.returnedQuantity === 0}
+                className={`rounded-full border px-2 py-1 disabled:cursor-not-allowed disabled:opacity-40 ${
+                  sale.returnReason === 'restocked'
                     ? 'border-emerald-800 bg-emerald-950/30 text-emerald-300'
                     : 'border-white/10 text-slate-500 hover:bg-emerald-500/10'
                 }`}
               >
-                זיכוי + חזרה למלאי
+                חזרה למלאי
               </button>
               <button
-                onClick={() => setReturn(sale.id, 'damaged')}
-                className={`rounded-full border px-2 py-1 ${
-                  sale.returned && sale.returnReason === 'damaged'
+                onClick={() => setReturnReason(sale, 'damaged')}
+                disabled={sale.returnedQuantity === 0}
+                className={`rounded-full border px-2 py-1 disabled:cursor-not-allowed disabled:opacity-40 ${
+                  sale.returnReason === 'damaged'
                     ? 'border-rose-800 bg-rose-950/30 text-rose-300'
                     : 'border-white/10 text-slate-500 hover:bg-rose-500/10'
                 }`}
               >
-                זיכוי בלאי
+                בלאי
               </button>
-              {sale.returned && (
-                <span className="text-slate-500">
-                  {sale.returnReason === 'restocked' ? 'הכמות חזרה למלאי, הרכישה נשמרה בהיסטוריה.' : 'הכמות לא חוזרת למלאי (בלאי), הרכישה נשמרה בהיסטוריה.'}
+              {sale.returnedQuantity > 0 && (
+                <button onClick={() => setReturnReason(sale, null)} className="text-slate-500 hover:text-slate-300">
+                  בטל החזרה
+                </button>
+              )}
+              {sale.returnedQuantity > 0 && (
+                <span className="w-full text-slate-500">
+                  {sale.returnReason === 'restocked'
+                    ? `${sale.returnedQuantity} יח' חזרו למלאי וזוכו, ${sale.quantity - sale.returnedQuantity} נשארו כמכירה. הרכישה המקורית נשמרה בהיסטוריה.`
+                    : `${sale.returnedQuantity} יח' זוכו כבלאי (לא חוזרות למלאי), ${sale.quantity - sale.returnedQuantity} נשארו כמכירה. הרכישה המקורית נשמרה בהיסטוריה.`}
                 </span>
               )}
             </div>
