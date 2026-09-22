@@ -1,5 +1,6 @@
 import { createDefaultProduct, generateSku } from '../defaultProduct'
 import type { Customer, DeletedProduct, MarketingExpense, Product } from '../types'
+import { normalizeIsraeliPhone } from './phone'
 
 export const STORAGE_KEY = 'import-tracker-products'
 export const TRASH_KEY = 'import-tracker-deleted-products'
@@ -86,7 +87,7 @@ export function normalizeCustomer(raw: Partial<Customer>): Customer {
   return {
     id: raw.id ?? crypto.randomUUID(),
     name: raw.name ?? '',
-    phone: raw.phone ?? '',
+    phone: normalizeIsraeliPhone(raw.phone ?? ''),
     email: raw.email ?? '',
     address: raw.address ?? '',
     notes: raw.notes ?? '',

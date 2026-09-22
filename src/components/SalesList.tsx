@@ -90,6 +90,7 @@ export function SalesList({ sales, onChange, suggestedSalePrice = 0, customers, 
           const isOpen = openId === sale.id
           const hasReturn = sale.returnedQuantity > 0
           const hasDiscount = !!sale.discountType && sale.discountValue > 0
+          const discountFormOpen = sale.discountType !== null
           const netQty = sale.quantity - sale.returnedQuantity
           const grossTotal = netQty * sale.pricePerUnit
           const total = saleNetRevenue(sale)
@@ -240,7 +241,7 @@ export function SalesList({ sales, onChange, suggestedSalePrice = 0, customers, 
                   </label>
 
                   <div className="rounded-lg bg-black/20 p-3">
-                    {!hasDiscount ? (
+                    {!discountFormOpen ? (
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="text-xs text-slate-400">הנחה / מינוס:</span>
                         <button
