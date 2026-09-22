@@ -13,6 +13,7 @@ export interface Expense {
 }
 
 export type ReturnReason = 'restocked' | 'damaged'
+export type DiscountType = 'amount' | 'percent'
 
 export interface Sale {
   id: string
@@ -21,6 +22,8 @@ export interface Sale {
   pricePerUnit: number
   returnedQuantity: number
   returnReason: ReturnReason | null
+  discountType: DiscountType | null
+  discountValue: number
 }
 
 export interface Shipment {

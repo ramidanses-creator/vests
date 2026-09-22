@@ -103,6 +103,8 @@ function normalizeProduct(raw: Partial<Product> & { quantityImported?: number; h
         ...s,
         returnedQuantity: s.returnedQuantity ?? (legacy.returned ? s.quantity : 0),
         returnReason: s.returnReason ?? null,
+        discountType: s.discountType ?? null,
+        discountValue: s.discountValue ?? 0,
       }
     }),
   }

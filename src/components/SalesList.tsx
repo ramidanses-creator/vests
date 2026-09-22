@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import type { ReturnReason, Sale } from '../types'
-import { formatCurrency } from '../utils/calculations'
+import type { DiscountType, ReturnReason, Sale } from '../types'
+import { formatCurrency, saleNetRevenue } from '../utils/calculations'
 
 interface Props {
   sales: Sale[]
@@ -22,9 +22,27 @@ export function SalesList({ sales, onChange }: Props) {
     const id = crypto.randomUUID()
     onChange([
       ...sales,
-      { id, date: today(), quantity: 1, pricePerUnit: 0, returnedQuantity: 0, returnReason: null },
+      {
+        id,
+        date: today(),
+        quantity: 1,
+        pricePerUnit: 0,
+        returnedQuantity: 0,
+        returnReason: null,
+        discountType: null,
+        discountValue: 0,
+      },
     ])
     setOpenId(id)
+  }
+
+  function setDiscount(sale: Sale, type: DiscountType, value: number) {
+    const clampedValue = type === 'percent' ? Math.max(0, Math.min(100, value)) : Math.max(0, value)
+    updateSale(sale.id, { discountType: type, discountValue: clampedValue })
+  }
+
+  function clearDiscount(sale: Sale) {
+    updateSale(sale.id, { discountType: null, discountValue: 0 })
   }
 
   function setReturnedQuantity(sale: Sale, quantity: number) {
@@ -64,8 +82,10 @@ export function SalesList({ sales, onChange }: Props) {
         {[...sales].reverse().map((sale) => {
           const isOpen = openId === sale.id
           const hasReturn = sale.returnedQuantity > 0
+          const hasDiscount = !!sale.discountType && sale.discountValue > 0
           const netQty = sale.quantity - sale.returnedQuantity
-          const total = netQty * sale.pricePerUnit
+          const grossTotal = netQty * sale.pricePerUnit
+          const total = saleNetRevenue(sale)
 
           return (
             <div
@@ -90,6 +110,11 @@ export function SalesList({ sales, onChange }: Props) {
                       }`}
                     >
                       ↩ {sale.returnedQuantity} {sale.returnReason === 'restocked' ? 'חזרו למלאי' : 'בלאי'}
+                    </span>
+                  )}
+                  {hasDiscount && (
+                    <span className="rounded-md bg-sky-500/20 px-2 py-0.5 text-[11px] font-medium text-sky-300">
+                      הנחה {sale.discountType === 'percent' ? `${sale.discountValue}%` : formatCurrency(sale.discountValue)}
                     </span>
                   )}
                 </div>
@@ -145,6 +170,62 @@ export function SalesList({ sales, onChange }: Props) {
                     >
                       מחק מכירה
                     </button>
+                  </div>
+
+                  <div className="rounded-lg bg-black/20 p-3">
+                    {!hasDiscount ? (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-xs text-slate-400">הנחה / מינוס:</span>
+                        <button
+                          onClick={() => setDiscount(sale, 'amount', 0)}
+                          className="rounded-md border border-white/10 px-3 py-1 text-xs text-slate-300 hover:bg-white/5"
+                        >
+                          סכום קבוע (₪)
+                        </button>
+                        <button
+                          onClick={() => setDiscount(sale, 'percent', 0)}
+                          className="rounded-md border border-white/10 px-3 py-1 text-xs text-slate-300 hover:bg-white/5"
+                        >
+                          אחוז (%)
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-xs text-slate-400">הנחה:</span>
+                          <div className="flex overflow-hidden rounded-md border border-white/10 text-xs">
+                            <button
+                              onClick={() => setDiscount(sale, 'amount', sale.discountType === 'amount' ? sale.discountValue : 0)}
+                              className={`px-2 py-1 ${sale.discountType === 'amount' ? 'bg-sky-500 text-slate-950' : 'bg-black/20 text-slate-400'}`}
+                            >
+                              ₪
+                            </button>
+                            <button
+                              onClick={() => setDiscount(sale, 'percent', sale.discountType === 'percent' ? sale.discountValue : 0)}
+                              className={`px-2 py-1 ${sale.discountType === 'percent' ? 'bg-sky-500 text-slate-950' : 'bg-black/20 text-slate-400'}`}
+                            >
+                              %
+                            </button>
+                          </div>
+                          <input
+                            type="text"
+                            inputMode="decimal"
+                            placeholder="0"
+                            value={sale.discountValue === 0 ? '' : sale.discountValue}
+                            onChange={(e) => setDiscount(sale, sale.discountType ?? 'amount', Number(e.target.value) || 0)}
+                            className="w-20 rounded border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-slate-100"
+                          />
+                          <button onClick={() => clearDiscount(sale)} className="text-xs text-slate-500 hover:text-slate-300">
+                            ביטול הנחה
+                          </button>
+                        </div>
+                        {sale.discountValue > 0 && (
+                          <p className="text-xs text-slate-500">
+                            מחיר לפני הנחה: {formatCurrency(grossTotal)} · אחרי הנחה: {formatCurrency(total)}
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   <div className="rounded-lg bg-black/20 p-3">

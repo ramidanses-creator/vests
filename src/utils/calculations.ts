@@ -1,4 +1,12 @@
-import type { Currency, Product, ProductTotals } from '../types'
+import type { Currency, Product, ProductTotals, Sale } from '../types'
+
+export function saleNetRevenue(sale: Sale): number {
+  const netQty = sale.quantity - sale.returnedQuantity
+  const gross = netQty * sale.pricePerUnit
+  if (!sale.discountType || sale.discountValue <= 0) return gross
+  const discount = sale.discountType === 'percent' ? gross * (sale.discountValue / 100) : sale.discountValue
+  return Math.max(0, gross - discount)
+}
 
 export function amountInIls(amount: number, currency: Currency, usdToIlsRate: number | null): number {
   if (!Number.isFinite(amount)) return 0
@@ -29,10 +37,7 @@ export function calculateProductTotals(product: Product, fallbackUsdToIlsRate: n
     (sum, s) => sum + (s.returnReason === 'restocked' ? s.quantity - s.returnedQuantity : s.quantity),
     0,
   )
-  const totalRevenue = product.sales.reduce(
-    (sum, s) => sum + (s.quantity - s.returnedQuantity) * s.pricePerUnit,
-    0,
-  )
+  const totalRevenue = product.sales.reduce((sum, s) => sum + saleNetRevenue(s), 0)
   const totalCostOfSold = quantitySold * costPerUnit
   const totalProfit = totalRevenue - totalCostOfSold
   const profitPerUnit = quantitySold > 0 ? totalProfit / quantitySold : 0
