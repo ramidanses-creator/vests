@@ -29,12 +29,26 @@ type View = 'active' | 'standby' | 'inventory'
 const VIEW_ORDER: View[] = ['active', 'standby', 'inventory']
 
 type UtilityId = 'inventory' | 'split' | 'sales' | 'backup' | 'currency'
-const UTILITIES: { id: UtilityId; label: string; icon: string }[] = [
-  { id: 'inventory', label: 'מלאי לפי קטגוריה', icon: '📦' },
-  { id: 'split', label: 'פיצול משלוח/מכס', icon: '✂️' },
-  { id: 'sales', label: 'מכירות והחזרות', icon: '🧾' },
-  { id: 'backup', label: 'גיבוי ושחזור', icon: '💾' },
-  { id: 'currency', label: 'המרת מטבע', icon: '💱' },
+const UTILITIES: { id: UtilityId; label: string; shortLabel: string }[] = [
+  { id: 'inventory', label: 'מלאי לפי קטגוריה', shortLabel: 'מלאי' },
+  { id: 'split', label: 'פיצול משלוח/מכס', shortLabel: 'פיצול' },
+  { id: 'sales', label: 'מכירות והחזרות', shortLabel: 'מכירות' },
+  { id: 'backup', label: 'גיבוי ושחזור', shortLabel: 'גיבוי' },
+  { id: 'currency', label: 'המרת מטבע', shortLabel: 'מטח' },
+]
+// The square nav buttons show the general tools; sales lives in the FAB menu and
+// backup lives in the settings dropdown instead.
+const SQUARE_TOOLS = UTILITIES.filter((u) => u.id !== 'sales' && u.id !== 'backup')
+
+interface FabAction {
+  id: string
+  label: string
+}
+const FAB_ACTIONS: FabAction[] = [
+  { id: 'newOrder', label: 'פתיחת הזמנה' },
+  { id: 'sale', label: 'מכירה' },
+  { id: 'return', label: 'החזרת מלאי' },
+  { id: 'arrival', label: 'קבלת משלוח' },
 ]
 
 function loadSeenRemoteIds(): Set<string> {
@@ -147,6 +161,7 @@ function AppContent({ uid, userEmail }: AppContentProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [activeUtility, setActiveUtility] = useState<UtilityId | null>(null)
   const [profileOpen, setProfileOpen] = useState(false)
+  const [fabOpen, setFabOpen] = useState(false)
   const productsViewRef = useRef<HTMLDivElement>(null)
   const [cloudLoaded, setCloudLoaded] = useState(false)
   const [previousLoginAt, setPreviousLoginAt] = useState<number | null>(null)
@@ -257,6 +272,13 @@ function AppContent({ uid, userEmail }: AppContentProps) {
     setActiveUtility(null)
   }
 
+  function handleFabAction(id: string) {
+    setFabOpen(false)
+    if (id === 'newOrder') quickNewOrder()
+    else if (id === 'sale' || id === 'return') quickSale()
+    else if (id === 'arrival') quickArrival()
+  }
+
   function removeProduct(id: string) {
     const target = products.find((p) => p.id === id)
     setProducts((prev) => prev.filter((p) => p.id !== id))
@@ -348,7 +370,7 @@ function AppContent({ uid, userEmail }: AppContentProps) {
   }
 
   return (
-    <div className="min-h-screen pb-16" dir="rtl">
+    <div className="min-h-screen pb-24" dir="rtl">
       <header className="sticky top-0 z-10 border-b border-white/10 bg-[#0f1117]/90 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center justify-end px-4 py-3">
           <div className="relative">
@@ -367,6 +389,15 @@ function AppContent({ uid, userEmail }: AppContentProps) {
                     : 'זו הכניסה הראשונה שלך'}
                 </p>
                 <button
+                  onClick={() => {
+                    setProfileOpen(false)
+                    setActiveUtility('backup')
+                  }}
+                  className="mb-2 w-full rounded-md border border-white/10 py-1.5 text-center text-slate-300 hover:bg-white/5"
+                >
+                  גיבוי ושחזור
+                </button>
+                <button
                   onClick={() => signOut(auth)}
                   className="w-full rounded-md border border-white/10 py-1.5 text-center text-slate-300 hover:bg-white/5"
                 >
@@ -380,76 +411,6 @@ function AppContent({ uid, userEmail }: AppContentProps) {
 
       <main className="mx-auto mt-6 flex max-w-5xl flex-col gap-6 px-4">
         <SummaryPanel products={products} usdToIlsRate={officialRate} />
-
-        <section className="flex flex-col gap-2">
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">פעולות מהירות</h2>
-          <div className="grid grid-cols-3 gap-2">
-            <button
-              onClick={quickNewOrder}
-              className="flex min-h-[92px] flex-col items-center justify-center gap-2 rounded-xl border border-white/10 bg-[#1a1b20] p-2 text-center transition-colors hover:border-teal-700/60 hover:bg-teal-950/20"
-            >
-              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-teal-500/15 text-lg">➕</span>
-              <span className="text-xs font-medium text-slate-200">הזמנה חדשה</span>
-            </button>
-            <button
-              onClick={quickSale}
-              className="flex min-h-[92px] flex-col items-center justify-center gap-2 rounded-xl border border-white/10 bg-[#1a1b20] p-2 text-center transition-colors hover:border-amber-700/60 hover:bg-amber-950/20"
-            >
-              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-500/15 text-lg">🧾</span>
-              <span className="text-xs font-medium text-slate-200">מכירה</span>
-            </button>
-            <button
-              onClick={quickArrival}
-              className="relative flex min-h-[92px] flex-col items-center justify-center gap-2 rounded-xl border border-white/10 bg-[#1a1b20] p-2 text-center transition-colors hover:border-sky-700/60 hover:bg-sky-950/20"
-            >
-              {alertCount > 0 && (
-                <span className="absolute -top-1.5 left-3 flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">
-                  {alertCount}
-                </span>
-              )}
-              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-sky-500/15 text-lg">🚚</span>
-              <span className="text-xs font-medium text-slate-200">הגעת סחורה</span>
-            </button>
-          </div>
-        </section>
-
-        <section className="flex flex-col gap-2">
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">כלים</h2>
-          <div className="grid grid-cols-4 gap-2">
-            {UTILITIES.map((u, i) => (
-              <button
-                key={u.id}
-                onClick={() => setActiveUtility((prev) => (prev === u.id ? null : u.id))}
-                className={`flex min-h-[72px] flex-col items-center justify-center gap-1 rounded-lg border p-2 text-center transition-colors ${
-                  i === UTILITIES.length - 1 && UTILITIES.length % 4 === 1 ? 'col-span-4' : ''
-                } ${
-                  activeUtility === u.id
-                    ? 'border-teal-500 bg-teal-950/30'
-                    : 'border-white/10 bg-white/[0.02] hover:bg-white/5'
-                }`}
-              >
-                <span className="text-base">{u.icon}</span>
-                <span className="text-[11px] leading-tight text-slate-300">{u.label}</span>
-              </button>
-            ))}
-          </div>
-
-          {activeUtility && (
-            <div className="max-h-[60vh] overflow-y-auto rounded-xl border border-white/10 bg-[#1a1b20] p-4">
-              {activeUtility === 'inventory' && <InventoryByCategory products={products} usdToIlsRate={officialRate} />}
-              {activeUtility === 'split' && (
-                <ShipmentSplitCalculator products={products} onChange={updateProduct} usdToIlsRate={officialRate} />
-              )}
-              {activeUtility === 'sales' && (
-                <SalesCenter products={filteredProducts} onChange={updateProduct} usdToIlsRate={officialRate} />
-              )}
-              {activeUtility === 'backup' && (
-                <BackupTools products={products} deleted={deleted} onImport={importBackup} />
-              )}
-              {activeUtility === 'currency' && <CurrencyConverter />}
-            </div>
-          )}
-        </section>
 
         {chatOpen ? (
           <ChatEntry
@@ -522,6 +483,112 @@ function AppContent({ uid, userEmail }: AppContentProps) {
           <DeletedProducts deleted={deleted} onRestore={restoreProduct} onPurge={purgeDeleted} />
         </CollapsibleSection>
       </main>
+
+      {activeUtility && (
+        <div
+          className="fixed inset-0 z-40 flex items-end justify-center bg-black/60"
+          onClick={() => setActiveUtility(null)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="animate-[grow_200ms_ease-out] max-h-[75vh] w-full max-w-5xl origin-bottom overflow-y-auto rounded-t-2xl border-t border-white/10 bg-[#1a1b20] p-4"
+          >
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-slate-200">
+                {UTILITIES.find((u) => u.id === activeUtility)?.label}
+              </h2>
+              <button onClick={() => setActiveUtility(null)} className="text-slate-500 hover:text-slate-300">
+                ✕
+              </button>
+            </div>
+            {activeUtility === 'inventory' && <InventoryByCategory products={products} usdToIlsRate={officialRate} />}
+            {activeUtility === 'split' && (
+              <ShipmentSplitCalculator products={products} onChange={updateProduct} usdToIlsRate={officialRate} />
+            )}
+            {activeUtility === 'sales' && (
+              <SalesCenter products={filteredProducts} onChange={updateProduct} usdToIlsRate={officialRate} />
+            )}
+            {activeUtility === 'backup' && (
+              <BackupTools products={products} deleted={deleted} onImport={importBackup} />
+            )}
+            {activeUtility === 'currency' && <CurrencyConverter />}
+          </div>
+        </div>
+      )}
+
+      {fabOpen && <div className="fixed inset-0 z-30" onClick={() => setFabOpen(false)} />}
+
+      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-white/10 bg-[#0f1117]/95 backdrop-blur">
+        <div className="relative mx-auto flex max-w-5xl items-center justify-between px-4 py-2">
+          <div className="flex gap-2">
+            {SQUARE_TOOLS.slice(0, 2).map((tool) => (
+              <button
+                key={tool.id}
+                onClick={() => {
+                  setFabOpen(false)
+                  setActiveUtility((prev) => (prev === tool.id ? null : tool.id))
+                }}
+                className={`relative flex h-12 items-center justify-center rounded-lg border px-3 text-center text-xs font-medium transition-colors ${
+                  activeUtility === tool.id
+                    ? 'border-teal-500 bg-teal-950/30 text-teal-200'
+                    : 'border-white/10 bg-white/[0.02] text-slate-300 hover:bg-white/5'
+                }`}
+              >
+                {tool.id === 'inventory' && alertCount > 0 && (
+                  <span className="absolute -top-1.5 -left-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold text-white">
+                    {alertCount}
+                  </span>
+                )}
+                {tool.shortLabel}
+              </button>
+            ))}
+          </div>
+
+          <div className="w-14" />
+
+          <div className="flex gap-2">
+            {SQUARE_TOOLS.slice(2).map((tool) => (
+              <button
+                key={tool.id}
+                onClick={() => {
+                  setFabOpen(false)
+                  setActiveUtility((prev) => (prev === tool.id ? null : tool.id))
+                }}
+                className={`flex h-12 items-center justify-center rounded-lg border px-3 text-center text-xs font-medium transition-colors ${
+                  activeUtility === tool.id
+                    ? 'border-teal-500 bg-teal-950/30 text-teal-200'
+                    : 'border-white/10 bg-white/[0.02] text-slate-300 hover:bg-white/5'
+                }`}
+              >
+                {tool.shortLabel}
+              </button>
+            ))}
+          </div>
+
+          {fabOpen && (
+            <div className="absolute bottom-[70px] left-1/2 z-40 flex -translate-x-1/2 flex-col items-stretch gap-2">
+              {FAB_ACTIONS.map((action) => (
+                <button
+                  key={action.id}
+                  onClick={() => handleFabAction(action.id)}
+                  className="animate-[grow_150ms_ease-out] whitespace-nowrap rounded-full border border-white/10 bg-[#1a1b20] px-4 py-2 text-xs font-medium text-slate-200 shadow-lg"
+                >
+                  {action.label}
+                </button>
+              ))}
+            </div>
+          )}
+
+          <button
+            onClick={() => setFabOpen((v) => !v)}
+            className={`absolute -top-7 left-1/2 flex h-14 w-14 -translate-x-1/2 items-center justify-center rounded-full bg-teal-500 text-2xl font-bold text-slate-950 shadow-lg shadow-teal-500/30 transition-transform ${
+              fabOpen ? 'rotate-45' : ''
+            }`}
+          >
+            +
+          </button>
+        </div>
+      </nav>
     </div>
   )
 }
