@@ -18,12 +18,13 @@ import { createDefaultProduct, generateSku } from './defaultProduct'
 import { auth, db } from './firebase'
 import { useAuthUser } from './hooks/useAuthUser'
 import { useOfficialRate } from './hooks/useOfficialRate'
-import { PRODUCT_STATUS_LABELS, type DeletedProduct, type Product } from './types'
+import { PRODUCT_STATUS_LABELS, type DeletedProduct, type MarketingExpense, type Product } from './types'
 import { countInventoryAlerts } from './utils/calculations'
 
 const STORAGE_KEY = 'import-tracker-products'
 const TRASH_KEY = 'import-tracker-deleted-products'
 const SEEN_REMOTE_IDS_KEY = 'import-tracker-seen-remote-ids'
+const MARKETING_KEY = 'import-tracker-marketing-expenses'
 
 type View = 'active' | 'standby' | 'inventory'
 const VIEW_ORDER: View[] = ['active', 'standby', 'inventory']
@@ -168,6 +169,24 @@ function saveDeleted(deleted: DeletedProduct[]) {
   }
 }
 
+function loadMarketingExpenses(): MarketingExpense[] {
+  try {
+    const raw = localStorage.getItem(MARKETING_KEY)
+    if (!raw) return []
+    return JSON.parse(raw) as MarketingExpense[]
+  } catch {
+    return []
+  }
+}
+
+function saveMarketingExpenses(expenses: MarketingExpense[]) {
+  try {
+    localStorage.setItem(MARKETING_KEY, JSON.stringify(expenses))
+  } catch {
+    // ignore storage failures
+  }
+}
+
 interface AppContentProps {
   uid: string
   userEmail: string | null
@@ -179,6 +198,7 @@ function AppContent({ uid, userEmail }: AppContentProps) {
     return stored.length > 0 ? stored : [createDefaultProduct()]
   })
   const [deleted, setDeleted] = useState<DeletedProduct[]>(() => loadDeleted())
+  const [marketingExpenses, setMarketingExpenses] = useState<MarketingExpense[]>(() => loadMarketingExpenses())
   const [view, setView] = useState<View>('active')
   const [lastAddedId, setLastAddedId] = useState<string | null>(null)
   const [chatOpen, setChatOpen] = useState(false)
@@ -199,6 +219,10 @@ function AppContent({ uid, userEmail }: AppContentProps) {
     saveDeleted(deleted)
   }, [deleted])
 
+  useEffect(() => {
+    saveMarketingExpenses(marketingExpenses)
+  }, [marketingExpenses])
+
   // Load this user's data from Firestore once on sign-in, record the previous
   // login time for display, then stamp this session as the new "last login".
   useEffect(() => {
@@ -211,10 +235,12 @@ function AppContent({ uid, userEmail }: AppContentProps) {
         const data = snap.data() as {
           products?: Partial<Product>[]
           deleted?: { product: Partial<Product>; deletedAt: string }[]
+          marketingExpenses?: MarketingExpense[]
           lastLoginAt?: number
         }
         if (data.products) setProducts(data.products.map(normalizeProduct))
         if (data.deleted) setDeleted(data.deleted.map((d) => ({ product: normalizeProduct(d.product), deletedAt: d.deletedAt })))
+        if (data.marketingExpenses) setMarketingExpenses(data.marketingExpenses)
         setPreviousLoginAt(data.lastLoginAt ?? null)
       } else {
         setPreviousLoginAt(null)
@@ -234,12 +260,12 @@ function AppContent({ uid, userEmail }: AppContentProps) {
     if (!cloudLoaded) return
     setDoc(
       doc(db, 'users', uid),
-      { products: withoutEmptyDrafts(products), deleted, updatedAt: Date.now() },
+      { products: withoutEmptyDrafts(products), deleted, marketingExpenses, updatedAt: Date.now() },
       { merge: true },
     ).catch(() => {
       // offline or blocked — localStorage still has the data
     })
-  }, [uid, cloudLoaded, products, deleted])
+  }, [uid, cloudLoaded, products, deleted, marketingExpenses])
 
   useEffect(() => {
     fetch('products.json')
@@ -348,6 +374,14 @@ function AppContent({ uid, userEmail }: AppContentProps) {
 
   function purgeDeleted(id: string) {
     setDeleted((prev) => prev.filter((d) => d.product.id !== id))
+  }
+
+  function addMarketingExpense(expense: MarketingExpense) {
+    setMarketingExpenses((prev) => [expense, ...prev])
+  }
+
+  function removeMarketingExpense(id: string) {
+    setMarketingExpenses((prev) => prev.filter((e) => e.id !== id))
   }
 
   function importBackup(data: { products: Partial<Product>[]; deleted: { product: Partial<Product>; deletedAt: string }[] }) {
@@ -475,7 +509,15 @@ function AppContent({ uid, userEmail }: AppContentProps) {
             {activeUtility === 'split' && (
               <ShipmentSplitCalculator products={products} onChange={updateProduct} usdToIlsRate={officialRate} />
             )}
-            {activeUtility === 'analytics' && <Analytics products={products} usdToIlsRate={officialRate} />}
+            {activeUtility === 'analytics' && (
+              <Analytics
+                products={products}
+                usdToIlsRate={officialRate}
+                marketingExpenses={marketingExpenses}
+                onAddMarketingExpense={addMarketingExpense}
+                onRemoveMarketingExpense={removeMarketingExpense}
+              />
+            )}
             {activeUtility === 'sales' && (
               <SalesCenter products={filteredProducts} onChange={updateProduct} usdToIlsRate={officialRate} />
             )}
@@ -599,7 +641,7 @@ function AppContent({ uid, userEmail }: AppContentProps) {
                         animation: `fan-out 320ms cubic-bezier(0.34, 1.56, 0.64, 1) ${i * 35}ms both`,
                       } as CSSProperties
                     }
-                    className="pointer-events-auto absolute left-0 top-0 flex h-[80px] w-[80px] items-center justify-center rounded-full border border-teal-500/25 bg-teal-950/40 p-1.5 text-center text-xs font-medium leading-tight text-slate-100 shadow-lg hover:bg-teal-900/50"
+                    className="pointer-events-auto absolute left-0 top-0 flex h-[80px] w-[80px] items-center justify-center rounded-full border-[3px] border-teal-300 bg-[#0d1418] p-1.5 text-center text-xs font-bold leading-tight text-white shadow-[0_0_0_4px_rgba(13,20,24,0.9),0_6px_24px_rgba(0,0,0,0.7)] hover:bg-[#132025]"
                   >
                     {action.label}
                   </button>

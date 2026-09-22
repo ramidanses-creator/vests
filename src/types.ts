@@ -56,6 +56,14 @@ export interface DeletedProduct {
   deletedAt: string
 }
 
+export interface MarketingExpense {
+  id: string
+  date: string
+  label: string
+  amount: number
+  currency: Currency
+}
+
 export interface ProductTotals {
   quantityImported: number
   quantityArrived: number
