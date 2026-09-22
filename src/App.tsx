@@ -370,7 +370,7 @@ function AppContent({ uid, userEmail }: AppContentProps) {
   }
 
   return (
-    <div className="min-h-screen pb-24" dir="rtl">
+    <div className="min-h-screen pb-28" dir="rtl">
       <header className="sticky top-0 z-10 border-b border-white/10 bg-[#0f1117]/90 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center justify-end px-4 py-3">
           <div className="relative">
@@ -519,7 +519,7 @@ function AppContent({ uid, userEmail }: AppContentProps) {
       {fabOpen && <div className="fixed inset-0 z-30" onClick={() => setFabOpen(false)} />}
 
       <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-white/10 bg-[#0f1117]/95 backdrop-blur">
-        <div className="relative mx-auto flex max-w-5xl items-center justify-between px-4 py-2">
+        <div className="relative mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
           <div className="flex gap-2">
             {SQUARE_TOOLS.slice(0, 2).map((tool) => (
               <button
@@ -528,7 +528,7 @@ function AppContent({ uid, userEmail }: AppContentProps) {
                   setFabOpen(false)
                   setActiveUtility((prev) => (prev === tool.id ? null : tool.id))
                 }}
-                className={`relative flex h-12 items-center justify-center rounded-lg border px-3 text-center text-xs font-medium transition-colors ${
+                className={`relative flex h-14 min-w-[70px] items-center justify-center rounded-xl border px-3 text-center text-sm font-medium transition-colors ${
                   activeUtility === tool.id
                     ? 'border-teal-500 bg-teal-950/30 text-teal-200'
                     : 'border-white/10 bg-white/[0.02] text-slate-300 hover:bg-white/5'
@@ -544,7 +544,7 @@ function AppContent({ uid, userEmail }: AppContentProps) {
             ))}
           </div>
 
-          <div className="w-14" />
+          <div className="w-16" />
 
           <div className="flex gap-2">
             {SQUARE_TOOLS.slice(2).map((tool) => (
@@ -554,7 +554,7 @@ function AppContent({ uid, userEmail }: AppContentProps) {
                   setFabOpen(false)
                   setActiveUtility((prev) => (prev === tool.id ? null : tool.id))
                 }}
-                className={`flex h-12 items-center justify-center rounded-lg border px-3 text-center text-xs font-medium transition-colors ${
+                className={`flex h-14 min-w-[70px] items-center justify-center rounded-xl border px-3 text-center text-sm font-medium transition-colors ${
                   activeUtility === tool.id
                     ? 'border-teal-500 bg-teal-950/30 text-teal-200'
                     : 'border-white/10 bg-white/[0.02] text-slate-300 hover:bg-white/5'
@@ -566,12 +566,12 @@ function AppContent({ uid, userEmail }: AppContentProps) {
           </div>
 
           {fabOpen && (
-            <div className="absolute bottom-[70px] left-1/2 z-40 flex -translate-x-1/2 flex-col items-stretch gap-2">
+            <div className="absolute bottom-[86px] left-1/2 z-40 flex w-48 -translate-x-1/2 flex-col items-stretch gap-2">
               {FAB_ACTIONS.map((action) => (
                 <button
                   key={action.id}
                   onClick={() => handleFabAction(action.id)}
-                  className="animate-[grow_150ms_ease-out] whitespace-nowrap rounded-full border border-white/10 bg-[#1a1b20] px-4 py-2 text-xs font-medium text-slate-200 shadow-lg"
+                  className="animate-[grow_150ms_ease-out] rounded-xl border border-white/10 bg-[#1a1b20] py-3 text-center text-sm font-medium text-slate-200 shadow-lg hover:bg-white/5"
                 >
                   {action.label}
                 </button>
@@ -581,7 +581,7 @@ function AppContent({ uid, userEmail }: AppContentProps) {
 
           <button
             onClick={() => setFabOpen((v) => !v)}
-            className={`absolute -top-7 left-1/2 flex h-14 w-14 -translate-x-1/2 items-center justify-center rounded-full bg-teal-500 text-2xl font-bold text-slate-950 shadow-lg shadow-teal-500/30 transition-transform ${
+            className={`absolute -top-8 left-1/2 flex h-16 w-16 -translate-x-1/2 items-center justify-center rounded-full bg-teal-500 text-3xl font-bold text-slate-950 shadow-lg shadow-teal-500/30 transition-transform ${
               fabOpen ? 'rotate-45' : ''
             }`}
           >
