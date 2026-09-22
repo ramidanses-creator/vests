@@ -27,3 +27,14 @@ textarea {
     transform: scale(1);
   }
 }
+
+@keyframes fan-out {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) translate(0, 0) scale(0.35);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) translate(var(--fan-x), var(--fan-y)) scale(1);
+  }
+}

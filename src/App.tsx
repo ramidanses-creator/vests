@@ -1,6 +1,6 @@
 import { doc, getDoc, setDoc } from 'firebase/firestore'
 import { signOut } from 'firebase/auth'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { AuthScreen } from './components/AuthScreen'
 import { BackupTools } from './components/BackupTools'
 import { ChatEntry } from './components/ChatEntry'
@@ -582,8 +582,14 @@ function AppContent({ uid, userEmail }: AppContentProps) {
                   <button
                     key={action.id}
                     onClick={() => handleFabAction(action.id)}
-                    style={{ transform: `translate(-50%, -50%) translate(${x}px, ${y}px)` }}
-                    className="animate-[grow_200ms_ease-out] pointer-events-auto absolute left-0 top-0 flex h-[80px] w-[80px] items-center justify-center rounded-full border border-white/10 bg-[#1a1b20] p-1.5 text-center text-xs font-medium leading-tight text-slate-200 shadow-lg hover:bg-white/10"
+                    style={
+                      {
+                        '--fan-x': `${x}px`,
+                        '--fan-y': `${y}px`,
+                        animation: `fan-out 320ms cubic-bezier(0.34, 1.56, 0.64, 1) ${i * 35}ms both`,
+                      } as CSSProperties
+                    }
+                    className="pointer-events-auto absolute left-0 top-0 flex h-[80px] w-[80px] items-center justify-center rounded-full border border-teal-500/25 bg-teal-950/40 p-1.5 text-center text-xs font-medium leading-tight text-slate-100 shadow-lg hover:bg-teal-900/50"
                   >
                     {action.label}
                   </button>
@@ -594,7 +600,7 @@ function AppContent({ uid, userEmail }: AppContentProps) {
 
           <button
             onClick={() => setFabOpen((v) => !v)}
-            className={`absolute -top-8 left-1/2 flex h-16 w-16 -translate-x-1/2 items-center justify-center rounded-full bg-teal-500 text-3xl font-bold text-slate-950 shadow-lg shadow-teal-500/30 transition-transform ${
+            className={`absolute -top-8 left-1/2 z-50 flex h-16 w-16 -translate-x-1/2 items-center justify-center rounded-full bg-teal-500 text-3xl font-bold text-slate-950 shadow-lg shadow-teal-500/30 transition-transform ${
               fabOpen ? 'rotate-45' : ''
             }`}
           >
