@@ -244,7 +244,7 @@ export function CustomersPage({ customers, products, onAdd, onUpdate, onRemove }
                           )}
                           {hasDiscount && (
                             <span className="rounded bg-sky-500/20 px-1.5 py-0.5 text-[10px] font-medium text-sky-300">
-                              הנחה
+                              {row.discountType === 'finalPricePerUnit' ? 'מחיר בפועל' : 'הנחה'}
                             </span>
                           )}
                           {hasReturn && (
@@ -265,11 +265,17 @@ export function CustomersPage({ customers, products, onAdd, onUpdate, onRemove }
                           מחיר ליחידה: {formatCurrency(row.pricePerUnit)} · סה״כ לפני הנחה: {formatCurrency(row.grossTotal)}
                         </p>
                         {hasDiscount ? (
-                          <p className="text-sky-300">
-                            הנחה שניתנה:{' '}
-                            {row.discountType === 'percent' ? `${row.discountValue}%` : formatCurrency(row.discountValue)} ·
-                            סה״כ אחרי הנחה: {formatCurrency(row.total)}
-                          </p>
+                          row.discountType === 'finalPricePerUnit' ? (
+                            <p className="text-sky-300">
+                              שולם בפועל: {formatCurrency(row.discountValue)} ליחידה · סה״כ: {formatCurrency(row.total)}
+                            </p>
+                          ) : (
+                            <p className="text-sky-300">
+                              הנחה שניתנה:{' '}
+                              {row.discountType === 'percent' ? `${row.discountValue}%` : formatCurrency(row.discountValue)} ·
+                              סה״כ אחרי הנחה: {formatCurrency(row.total)}
+                            </p>
+                          )
                         ) : (
                           <p>לא ניתנה הנחה ברכישה זו.</p>
                         )}

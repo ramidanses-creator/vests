@@ -42,6 +42,20 @@ describe('saleNetRevenue', () => {
   it('never goes below zero even if the discount exceeds revenue', () => {
     expect(saleNetRevenue(makeSale({ quantity: 1, pricePerUnit: 10, discountType: 'amount', discountValue: 999 }))).toBe(0)
   })
+
+  it('uses the actual per-unit price paid when discountType is finalPricePerUnit', () => {
+    expect(
+      saleNetRevenue(makeSale({ quantity: 5, pricePerUnit: 100, discountType: 'finalPricePerUnit', discountValue: 80 })),
+    ).toBe(400)
+  })
+
+  it('applies the actual per-unit price only to the net (post-return) quantity', () => {
+    expect(
+      saleNetRevenue(
+        makeSale({ quantity: 5, returnedQuantity: 2, pricePerUnit: 100, discountType: 'finalPricePerUnit', discountValue: 80 }),
+      ),
+    ).toBe(240)
+  })
 })
 
 describe('amountInIls', () => {

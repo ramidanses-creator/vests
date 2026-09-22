@@ -4,6 +4,9 @@ export function saleNetRevenue(sale: Sale): number {
   const netQty = sale.quantity - sale.returnedQuantity
   const gross = netQty * sale.pricePerUnit
   if (!sale.discountType || sale.discountValue <= 0) return gross
+  if (sale.discountType === 'finalPricePerUnit') {
+    return Math.max(0, netQty * sale.discountValue)
+  }
   const discount = sale.discountType === 'percent' ? gross * (sale.discountValue / 100) : sale.discountValue
   return Math.max(0, gross - discount)
 }

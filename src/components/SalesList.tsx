@@ -126,7 +126,9 @@ export function SalesList({ sales, onChange, suggestedSalePrice = 0, customers, 
                   )}
                   {hasDiscount && (
                     <span className="rounded-md bg-sky-500/20 px-2 py-0.5 text-[11px] font-medium text-sky-300">
-                      הנחה {sale.discountType === 'percent' ? `${sale.discountValue}%` : formatCurrency(sale.discountValue)}
+                      {sale.discountType === 'finalPricePerUnit'
+                        ? `שולם בפועל: ${formatCurrency(sale.discountValue)}/יח׳`
+                        : `הנחה ${sale.discountType === 'percent' ? `${sale.discountValue}%` : formatCurrency(sale.discountValue)}`}
                     </span>
                   )}
                   {sale.invoiceNumber && (
@@ -239,7 +241,7 @@ export function SalesList({ sales, onChange, suggestedSalePrice = 0, customers, 
                   <div className="rounded-lg bg-black/20 p-3">
                     {!discountFormOpen ? (
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-xs text-slate-400">הנחה / מינוס:</span>
+                        <span className="text-xs text-slate-400">הנחה / מחיר בפועל:</span>
                         <button
                           onClick={() => setDiscount(sale, 'amount', 0)}
                           className="rounded-md border border-white/10 px-3 py-1 text-xs text-slate-300 hover:bg-white/5"
@@ -252,11 +254,19 @@ export function SalesList({ sales, onChange, suggestedSalePrice = 0, customers, 
                         >
                           אחוז (%)
                         </button>
+                        <button
+                          onClick={() => setDiscount(sale, 'finalPricePerUnit', 0)}
+                          className="rounded-md border border-white/10 px-3 py-1 text-xs text-slate-300 hover:bg-white/5"
+                        >
+                          מחיר בפועל ליחידה
+                        </button>
                       </div>
                     ) : (
                       <div className="flex flex-col gap-2">
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="text-xs text-slate-400">הנחה:</span>
+                          <span className="text-xs text-slate-400">
+                            {sale.discountType === 'finalPricePerUnit' ? 'מחיר בפועל:' : 'הנחה:'}
+                          </span>
                           <div className="flex overflow-hidden rounded-md border border-white/10 text-xs">
                             <button
                               onClick={() => setDiscount(sale, 'amount', sale.discountType === 'amount' ? sale.discountValue : 0)}
@@ -270,23 +280,37 @@ export function SalesList({ sales, onChange, suggestedSalePrice = 0, customers, 
                             >
                               %
                             </button>
+                            <button
+                              onClick={() =>
+                                setDiscount(sale, 'finalPricePerUnit', sale.discountType === 'finalPricePerUnit' ? sale.discountValue : 0)
+                              }
+                              className={`px-2 py-1 ${sale.discountType === 'finalPricePerUnit' ? 'bg-sky-500 text-slate-950' : 'bg-black/20 text-slate-400'}`}
+                            >
+                              ליח׳
+                            </button>
                           </div>
                           <DecimalInput
-                            placeholder="0"
+                            placeholder={sale.discountType === 'finalPricePerUnit' ? 'מחיר ליחידה' : '0'}
                             value={sale.discountValue}
                             max={sale.discountType === 'percent' ? 100 : undefined}
                             onChange={(v) => setDiscount(sale, sale.discountType ?? 'amount', v)}
-                            className="w-20 rounded border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-slate-100"
+                            className="w-24 rounded border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-slate-100"
                           />
                           <button onClick={() => clearDiscount(sale)} className="text-xs text-slate-500 hover:text-slate-300">
-                            ביטול הנחה
+                            ביטול
                           </button>
                         </div>
-                        {sale.discountValue > 0 && (
-                          <p className="text-xs text-slate-500">
-                            מחיר לפני הנחה: {formatCurrency(grossTotal)} · אחרי הנחה: {formatCurrency(total)}
-                          </p>
-                        )}
+                        {sale.discountValue > 0 &&
+                          (sale.discountType === 'finalPricePerUnit' ? (
+                            <p className="text-xs text-slate-500">
+                              מחיר מקורי ליחידה: {formatCurrency(sale.pricePerUnit)} · שולם בפועל: {formatCurrency(sale.discountValue)}{' '}
+                              ליחידה · סה״כ: {formatCurrency(total)}
+                            </p>
+                          ) : (
+                            <p className="text-xs text-slate-500">
+                              מחיר לפני הנחה: {formatCurrency(grossTotal)} · אחרי הנחה: {formatCurrency(total)}
+                            </p>
+                          ))}
                       </div>
                     )}
                   </div>
