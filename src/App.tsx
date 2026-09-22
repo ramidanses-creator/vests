@@ -49,7 +49,7 @@ interface FabAction {
 const FAB_ACTIONS: FabAction[] = [
   { id: 'newOrder', label: 'פתיחת הזמנה' },
   { id: 'sale', label: 'מכירה' },
-  { id: 'return', label: 'החזרת מלאי' },
+  { id: 'standby', label: 'רשומים במערכת' },
   { id: 'arrival', label: 'קבלת משלוח' },
 ]
 
@@ -168,7 +168,7 @@ function AppContent({ uid, userEmail }: AppContentProps) {
   const [activeUtility, setActiveUtility] = useState<UtilityId | null>(null)
   const [profileOpen, setProfileOpen] = useState(false)
   const [fabOpen, setFabOpen] = useState(false)
-  const productsViewRef = useRef<HTMLDivElement>(null)
+  const productsViewRef = useRef<HTMLElement>(null)
   const [cloudLoaded, setCloudLoaded] = useState(false)
   const [previousLoginAt, setPreviousLoginAt] = useState<number | null>(null)
   const { officialRate } = useOfficialRate()
@@ -293,6 +293,16 @@ function AppContent({ uid, userEmail }: AppContentProps) {
     setActiveUtility(null)
   }
 
+  function quickStandby() {
+    setView('standby')
+    setActiveUtility(null)
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        productsViewRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      })
+    })
+  }
+
   function openTool(id: UtilityId) {
     setFabOpen(false)
     if (id === 'inventory') {
@@ -305,7 +315,8 @@ function AppContent({ uid, userEmail }: AppContentProps) {
   function handleFabAction(id: string) {
     setFabOpen(false)
     if (id === 'newOrder') quickNewOrder()
-    else if (id === 'sale' || id === 'return') quickSale()
+    else if (id === 'sale') quickSale()
+    else if (id === 'standby') quickStandby()
     else if (id === 'arrival') quickArrival()
   }
 
@@ -482,8 +493,15 @@ function AppContent({ uid, userEmail }: AppContentProps) {
           </button>
         )}
 
-        <section className="flex flex-col gap-2">
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">מוצרים</h2>
+        <section ref={productsViewRef} className="flex flex-col gap-2 scroll-mt-20">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">מוצרים</h2>
+            <span className="text-xs font-medium text-slate-400">
+              {view === 'active' && PRODUCT_STATUS_LABELS.active}
+              {view === 'standby' && `${PRODUCT_STATUS_LABELS.standby}${standbyCount > 0 ? ` (${standbyCount})` : ''}`}
+              {view === 'inventory' && `ניהול מלאי${alertCount > 0 ? ` ⚠${alertCount}` : ''}`}
+            </span>
+          </div>
           <input
             type="text"
             value={searchQuery}
@@ -491,39 +509,6 @@ function AppContent({ uid, userEmail }: AppContentProps) {
             placeholder="חיפוש מוצר לפי שם, קטגוריה או מק״ט"
             className="rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-100 focus:border-teal-500 focus:outline-none"
           />
-
-          <div ref={productsViewRef} className="grid grid-cols-3 gap-2 scroll-mt-20">
-          <button
-            onClick={() => setView('active')}
-            className={`truncate rounded-md px-2 py-1.5 text-sm font-medium transition-colors ${
-              view === 'active'
-                ? 'bg-teal-500 text-slate-950 shadow shadow-teal-500/30'
-                : 'bg-white/5 text-slate-300 hover:bg-white/10'
-            }`}
-          >
-            {PRODUCT_STATUS_LABELS.active}
-          </button>
-          <button
-            onClick={() => setView('standby')}
-            className={`truncate rounded-md px-2 py-1.5 text-sm font-medium transition-colors ${
-              view === 'standby'
-                ? 'bg-violet-500 text-slate-950 shadow shadow-violet-500/30'
-                : 'bg-white/5 text-slate-300 hover:bg-white/10'
-            }`}
-          >
-            {PRODUCT_STATUS_LABELS.standby} {standbyCount > 0 ? `(${standbyCount})` : ''}
-          </button>
-          <button
-            onClick={() => setView('inventory')}
-            className={`truncate rounded-md px-2 py-1.5 text-sm font-medium transition-colors ${
-              view === 'inventory'
-                ? 'bg-amber-400 text-slate-950 shadow shadow-amber-400/30'
-                : 'bg-white/5 text-slate-300 hover:bg-white/10'
-            }`}
-          >
-            ניהול מלאי {alertCount > 0 ? `⚠${alertCount}` : ''}
-          </button>
-          </div>
 
           <SwipeViews
             activeIndex={VIEW_ORDER.indexOf(view)}
@@ -585,16 +570,25 @@ function AppContent({ uid, userEmail }: AppContentProps) {
           </div>
 
           {fabOpen && (
-            <div className="absolute bottom-[86px] left-1/2 z-40 flex w-48 -translate-x-1/2 flex-col items-stretch gap-2">
-              {FAB_ACTIONS.map((action) => (
-                <button
-                  key={action.id}
-                  onClick={() => handleFabAction(action.id)}
-                  className="animate-[grow_150ms_ease-out] rounded-xl border border-white/10 bg-[#1a1b20] py-3 text-center text-sm font-medium text-slate-200 shadow-lg hover:bg-white/5"
-                >
-                  {action.label}
-                </button>
-              ))}
+            <div className="pointer-events-none absolute left-1/2 top-0 z-40 h-0 w-0 -translate-x-1/2">
+              {FAB_ACTIONS.map((action, i) => {
+                const n = FAB_ACTIONS.length
+                const angleDeg = -75 + i * (150 / (n - 1))
+                const rad = (angleDeg * Math.PI) / 180
+                const radius = 96
+                const x = radius * Math.sin(rad)
+                const y = -radius * Math.cos(rad)
+                return (
+                  <button
+                    key={action.id}
+                    onClick={() => handleFabAction(action.id)}
+                    style={{ transform: `translate(-50%, -50%) translate(${x}px, ${y}px)` }}
+                    className="animate-[grow_200ms_ease-out] pointer-events-auto absolute left-0 top-0 flex h-[70px] w-[70px] items-center justify-center rounded-full border border-white/10 bg-[#1a1b20] p-1.5 text-center text-[10px] font-medium leading-tight text-slate-200 shadow-lg hover:bg-white/10"
+                  >
+                    {action.label}
+                  </button>
+                )
+              })}
             </div>
           )}
 
