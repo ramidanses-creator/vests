@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { Currency, MarketingExpense, Product } from '../types'
-import { amountInIls, calculateProductTotals, formatCurrency } from '../utils/calculations'
+import { amountInIls, calculateProductTotals, formatCurrency, saleNetRevenue } from '../utils/calculations'
 
 interface Props {
   products: Product[]
@@ -50,7 +50,7 @@ function computeMonthlyStats(
       if (!month) return
       const netQty = sale.quantity - sale.returnedQuantity
       const entry = map.get(month) ?? { revenue: 0, cost: 0 }
-      entry.revenue += netQty * sale.pricePerUnit
+      entry.revenue += saleNetRevenue(sale)
       entry.cost += netQty * totals.costPerUnit
       map.set(month, entry)
     })
