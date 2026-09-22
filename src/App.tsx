@@ -573,9 +573,9 @@ function AppContent({ uid, userEmail }: AppContentProps) {
             <div className="pointer-events-none absolute left-1/2 top-0 z-40 h-0 w-0 -translate-x-1/2">
               {FAB_ACTIONS.map((action, i) => {
                 const n = FAB_ACTIONS.length
-                const angleDeg = -75 + i * (150 / (n - 1))
+                const angleDeg = -65 + i * (130 / (n - 1))
                 const rad = (angleDeg * Math.PI) / 180
-                const radius = 96
+                const radius = 128
                 const x = radius * Math.sin(rad)
                 const y = -radius * Math.cos(rad)
                 return (
@@ -583,7 +583,7 @@ function AppContent({ uid, userEmail }: AppContentProps) {
                     key={action.id}
                     onClick={() => handleFabAction(action.id)}
                     style={{ transform: `translate(-50%, -50%) translate(${x}px, ${y}px)` }}
-                    className="animate-[grow_200ms_ease-out] pointer-events-auto absolute left-0 top-0 flex h-[70px] w-[70px] items-center justify-center rounded-full border border-white/10 bg-[#1a1b20] p-1.5 text-center text-[10px] font-medium leading-tight text-slate-200 shadow-lg hover:bg-white/10"
+                    className="animate-[grow_200ms_ease-out] pointer-events-auto absolute left-0 top-0 flex h-[80px] w-[80px] items-center justify-center rounded-full border border-white/10 bg-[#1a1b20] p-1.5 text-center text-xs font-medium leading-tight text-slate-200 shadow-lg hover:bg-white/10"
                   >
                     {action.label}
                   </button>
