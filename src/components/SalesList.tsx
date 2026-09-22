@@ -1,18 +1,21 @@
 import { useState } from 'react'
-import type { DiscountType, ReturnReason, Sale } from '../types'
+import { CustomerPicker } from './CustomerPicker'
+import type { Customer, DiscountType, ReturnReason, Sale } from '../types'
 import { formatCurrency, saleNetRevenue } from '../utils/calculations'
 
 interface Props {
   sales: Sale[]
   onChange: (sales: Sale[]) => void
   suggestedSalePrice?: number
+  customers: Customer[]
+  onCreateCustomer: (customer: Customer) => void
 }
 
 function today(): string {
   return new Date().toISOString().slice(0, 10)
 }
 
-export function SalesList({ sales, onChange, suggestedSalePrice = 0 }: Props) {
+export function SalesList({ sales, onChange, suggestedSalePrice = 0, customers, onCreateCustomer }: Props) {
   const [openId, setOpenId] = useState<string | null>(null)
 
   function updateSale(id: string, patch: Partial<Sale>) {
@@ -34,6 +37,7 @@ export function SalesList({ sales, onChange, suggestedSalePrice = 0 }: Props) {
         discountValue: 0,
         invoiceNumber: '',
         notes: '',
+        customerId: null,
       },
     ])
     setOpenId(id)
@@ -128,6 +132,11 @@ export function SalesList({ sales, onChange, suggestedSalePrice = 0 }: Props) {
                       #{sale.invoiceNumber}
                     </span>
                   )}
+                  {sale.customerId && (
+                    <span className="rounded-md bg-teal-500/15 px-2 py-0.5 text-[11px] font-medium text-teal-300">
+                      👤 {customers.find((c) => c.id === sale.customerId)?.name ?? 'לקוח'}
+                    </span>
+                  )}
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-semibold text-slate-200">{formatCurrency(total)}</span>
@@ -137,6 +146,15 @@ export function SalesList({ sales, onChange, suggestedSalePrice = 0 }: Props) {
 
               {isOpen && (
                 <div className="flex flex-col gap-3 border-t border-white/10 p-3">
+                  <label className="flex flex-col gap-1 text-xs text-slate-400">
+                    לקוח
+                    <CustomerPicker
+                      customers={customers}
+                      selectedId={sale.customerId}
+                      onSelect={(customerId) => updateSale(sale.id, { customerId })}
+                      onCreateCustomer={onCreateCustomer}
+                    />
+                  </label>
                   <div className="flex flex-wrap items-center gap-2">
                     <label className="flex flex-col gap-1 text-xs text-slate-400">
                       תאריך

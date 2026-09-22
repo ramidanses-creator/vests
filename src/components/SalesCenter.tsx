@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { Product } from '../types'
+import type { Customer, Product } from '../types'
 import { calculateProductTotals, formatCurrency } from '../utils/calculations'
 import { SalesList } from './SalesList'
 
@@ -7,9 +7,11 @@ interface Props {
   products: Product[]
   onChange: (product: Product) => void
   usdToIlsRate: number | null
+  customers: Customer[]
+  onCreateCustomer: (customer: Customer) => void
 }
 
-export function SalesCenter({ products, onChange, usdToIlsRate }: Props) {
+export function SalesCenter({ products, onChange, usdToIlsRate, customers, onCreateCustomer }: Props) {
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
   if (products.length === 0) {
@@ -69,6 +71,8 @@ export function SalesCenter({ products, onChange, usdToIlsRate }: Props) {
             sales={expandedProduct.sales}
             onChange={(sales) => onChange({ ...expandedProduct, sales })}
             suggestedSalePrice={calculateProductTotals(expandedProduct, usdToIlsRate).suggestedSalePrice}
+            customers={customers}
+            onCreateCustomer={onCreateCustomer}
           />
         </div>
       )}

@@ -1,10 +1,11 @@
 import { createDefaultProduct, generateSku } from '../defaultProduct'
-import type { DeletedProduct, MarketingExpense, Product } from '../types'
+import type { Customer, DeletedProduct, MarketingExpense, Product } from '../types'
 
 export const STORAGE_KEY = 'import-tracker-products'
 export const TRASH_KEY = 'import-tracker-deleted-products'
 export const SEEN_REMOTE_IDS_KEY = 'import-tracker-seen-remote-ids'
 export const MARKETING_KEY = 'import-tracker-marketing-expenses'
+export const CUSTOMERS_KEY = 'import-tracker-customers'
 export const AUTO_BACKUP_KEY_PREFIX = 'import-tracker-auto-backup-'
 export const AUTO_BACKUP_DAYS_KEPT = 7
 
@@ -64,6 +65,7 @@ export function normalizeProduct(
         discountValue: s.discountValue ?? 0,
         invoiceNumber: s.invoiceNumber ?? '',
         notes: s.notes ?? '',
+        customerId: s.customerId ?? null,
       }
     }),
   }
@@ -77,6 +79,18 @@ export function normalizeMarketingExpense(raw: Partial<MarketingExpense>): Marke
     amount: raw.amount ?? 0,
     currency: raw.currency ?? 'ILS',
     recurring: raw.recurring ?? false,
+  }
+}
+
+export function normalizeCustomer(raw: Partial<Customer>): Customer {
+  return {
+    id: raw.id ?? crypto.randomUUID(),
+    name: raw.name ?? '',
+    phone: raw.phone ?? '',
+    email: raw.email ?? '',
+    address: raw.address ?? '',
+    notes: raw.notes ?? '',
+    createdAt: raw.createdAt ?? new Date().toISOString(),
   }
 }
 
@@ -155,16 +169,40 @@ export function saveMarketingExpenses(expenses: MarketingExpense[]) {
   }
 }
 
+export function loadCustomers(): Customer[] {
+  try {
+    const raw = localStorage.getItem(CUSTOMERS_KEY)
+    if (!raw) return []
+    const parsed = JSON.parse(raw) as Partial<Customer>[]
+    return parsed.map(normalizeCustomer)
+  } catch {
+    return []
+  }
+}
+
+export function saveCustomers(customers: Customer[]) {
+  try {
+    localStorage.setItem(CUSTOMERS_KEY, JSON.stringify(customers))
+  } catch {
+    // ignore storage failures
+  }
+}
+
 // Keeps one rotating snapshot per calendar day (last AUTO_BACKUP_DAYS_KEPT days)
 // so a bad edit or a sync mishap can be recovered from without any server round-trip.
-export function writeAutoBackupIfNeeded(products: Product[], deleted: DeletedProduct[], marketingExpenses: MarketingExpense[]) {
+export function writeAutoBackupIfNeeded(
+  products: Product[],
+  deleted: DeletedProduct[],
+  marketingExpenses: MarketingExpense[],
+  customers: Customer[],
+) {
   try {
     const today = new Date().toISOString().slice(0, 10)
     const todayKey = `${AUTO_BACKUP_KEY_PREFIX}${today}`
     if (localStorage.getItem(todayKey)) return
     localStorage.setItem(
       todayKey,
-      JSON.stringify({ products: withoutEmptyDrafts(products), deleted, marketingExpenses, savedAt: Date.now() }),
+      JSON.stringify({ products: withoutEmptyDrafts(products), deleted, marketingExpenses, customers, savedAt: Date.now() }),
     )
     const keys = Object.keys(localStorage).filter((k) => k.startsWith(AUTO_BACKUP_KEY_PREFIX))
     keys

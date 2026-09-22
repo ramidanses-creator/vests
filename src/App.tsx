@@ -5,6 +5,7 @@ import { BackupTools } from './components/BackupTools'
 import { ChatEntry } from './components/ChatEntry'
 import { CollapsibleSection } from './components/CollapsibleSection'
 import { CurrencyConverter } from './components/CurrencyConverter'
+import { CustomersPage } from './components/CustomersPage'
 import { DeletedProducts } from './components/DeletedProducts'
 import { Analytics } from './components/Analytics'
 import { InventoryPage } from './components/InventoryPage'
@@ -20,14 +21,14 @@ import { useAuthUser } from './hooks/useAuthUser'
 import { useCloudSync } from './hooks/useCloudSync'
 import { useOfficialRate } from './hooks/useOfficialRate'
 import { useToast } from './hooks/useToast'
-import { PRODUCT_STATUS_LABELS, type MarketingExpense, type Product } from './types'
+import { PRODUCT_STATUS_LABELS, type Customer, type MarketingExpense, type Product } from './types'
 import { countInventoryAlerts } from './utils/calculations'
 import { isEmptyDraft, normalizeProduct } from './utils/persistence'
 
 type View = 'active' | 'standby' | 'inventory'
 const VIEW_ORDER: View[] = ['active', 'standby', 'inventory']
 
-type UtilityId = 'inventory' | 'split' | 'sales' | 'backup' | 'currency' | 'analytics'
+type UtilityId = 'inventory' | 'split' | 'sales' | 'backup' | 'currency' | 'analytics' | 'customers'
 const UTILITIES: { id: UtilityId; label: string; shortLabel: string }[] = [
   { id: 'inventory', label: 'ניהול מלאי', shortLabel: 'מלאי' },
   { id: 'split', label: 'פיצול משלוח/מכס', shortLabel: 'פיצול' },
@@ -35,11 +36,12 @@ const UTILITIES: { id: UtilityId; label: string; shortLabel: string }[] = [
   { id: 'sales', label: 'מכירות והחזרות', shortLabel: 'מכירות' },
   { id: 'backup', label: 'גיבוי ושחזור', shortLabel: 'גיבוי' },
   { id: 'currency', label: 'המרת מטבע', shortLabel: 'מטח' },
+  { id: 'customers', label: 'כרטיסי לקוחות', shortLabel: 'לקוחות' },
 ]
 // The square nav buttons show the general tools, split evenly (2+2). "מלאי" jumps
-// straight to the full inventory tab instead of opening a page of its own; sales
-// lives in the FAB menu and backup lives in the settings dropdown.
-const SQUARE_TOOLS = UTILITIES.filter((u) => u.id !== 'sales' && u.id !== 'backup')
+// straight to the full inventory tab instead of opening a page of its own; sales,
+// backup and customers live behind the FAB menu / settings dropdown instead.
+const SQUARE_TOOLS = UTILITIES.filter((u) => u.id !== 'sales' && u.id !== 'backup' && u.id !== 'customers')
 
 interface FabAction {
   id: string
@@ -65,6 +67,8 @@ function AppContent({ uid, userEmail }: AppContentProps) {
     setDeleted,
     marketingExpenses,
     setMarketingExpenses,
+    customers,
+    setCustomers,
     previousLoginAt,
   } = useCloudSync(uid)
   const [view, setView] = useState<View>('active')
@@ -180,6 +184,22 @@ function AppContent({ uid, userEmail }: AppContentProps) {
     showToast('הוצאת הפרסום נמחקה', 'info')
   }
 
+  function addCustomer(customer: Customer) {
+    setCustomers((prev) => [customer, ...prev])
+    showToast(`הלקוח "${customer.name}" נוסף`, 'success')
+  }
+
+  function updateCustomer(customer: Customer) {
+    setCustomers((prev) => prev.map((c) => (c.id === customer.id ? customer : c)))
+    showToast('פרטי הלקוח עודכנו', 'success')
+  }
+
+  function removeCustomer(id: string) {
+    const target = customers.find((c) => c.id === id)
+    setCustomers((prev) => prev.filter((c) => c.id !== id))
+    if (target) showToast(`הלקוח "${target.name}" נמחק`, 'info')
+  }
+
   function importBackup(data: { products: Partial<Product>[]; deleted: { product: Partial<Product>; deletedAt: string }[] }) {
     setProducts(data.products.map(normalizeProduct))
     setDeleted(data.deleted.map((d) => ({ product: normalizeProduct(d.product), deletedAt: d.deletedAt })))
@@ -274,6 +294,15 @@ function AppContent({ uid, userEmail }: AppContentProps) {
                 <button
                   onClick={() => {
                     setProfileOpen(false)
+                    setActiveUtility('customers')
+                  }}
+                  className="mb-2 w-full rounded-md border border-white/10 py-1.5 text-center text-slate-300 hover:bg-white/5"
+                >
+                  כרטיסי לקוחות
+                </button>
+                <button
+                  onClick={() => {
+                    setProfileOpen(false)
                     setActiveUtility('backup')
                   }}
                   className="mb-2 w-full rounded-md border border-white/10 py-1.5 text-center text-slate-300 hover:bg-white/5"
@@ -317,12 +346,27 @@ function AppContent({ uid, userEmail }: AppContentProps) {
               />
             )}
             {activeUtility === 'sales' && (
-              <SalesCenter products={filteredProducts} onChange={updateProduct} usdToIlsRate={officialRate} />
+              <SalesCenter
+                products={filteredProducts}
+                onChange={updateProduct}
+                usdToIlsRate={officialRate}
+                customers={customers}
+                onCreateCustomer={addCustomer}
+              />
             )}
             {activeUtility === 'backup' && (
               <BackupTools products={products} deleted={deleted} onImport={importBackup} />
             )}
             {activeUtility === 'currency' && <CurrencyConverter />}
+            {activeUtility === 'customers' && (
+              <CustomersPage
+                customers={customers}
+                products={products}
+                onAdd={addCustomer}
+                onUpdate={updateCustomer}
+                onRemove={removeCustomer}
+              />
+            )}
           </div>
         ) : (
           <>

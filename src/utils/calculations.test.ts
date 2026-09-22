@@ -15,6 +15,7 @@ function makeSale(overrides: Partial<Sale> = {}): Sale {
     discountValue: 0,
     invoiceNumber: '',
     notes: '',
+    customerId: null,
     ...overrides,
   }
 }
