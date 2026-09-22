@@ -112,6 +112,24 @@ function normalizeProduct(raw: Partial<Product> & { quantityImported?: number; h
   }
 }
 
+function isEmptyDraft(p: Product): boolean {
+  return (
+    p.name.trim() === '' &&
+    p.category.trim() === '' &&
+    p.purchasePricePerUnit === 0 &&
+    p.notes.trim() === '' &&
+    p.sales.length === 0 &&
+    p.shipments.every((s) => s.quantity === 0) &&
+    p.expenses.every((e) => e.amount === 0)
+  )
+}
+
+// Untouched "new order" drafts are never persisted — only kept in memory
+// until the user either fills them in or navigates away.
+function withoutEmptyDrafts(products: Product[]): Product[] {
+  return products.filter((p) => !isEmptyDraft(p))
+}
+
 function loadProducts(): Product[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
@@ -125,7 +143,7 @@ function loadProducts(): Product[] {
 
 function saveProducts(products: Product[]) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(products))
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(withoutEmptyDrafts(products)))
   } catch {
     // ignore storage failures (private browsing, quota, etc.)
   }
@@ -214,7 +232,11 @@ function AppContent({ uid, userEmail }: AppContentProps) {
   // merge:true keeps the lastLoginAt field written above intact.
   useEffect(() => {
     if (!cloudLoaded) return
-    setDoc(doc(db, 'users', uid), { products, deleted, updatedAt: Date.now() }, { merge: true }).catch(() => {
+    setDoc(
+      doc(db, 'users', uid),
+      { products: withoutEmptyDrafts(products), deleted, updatedAt: Date.now() },
+      { merge: true },
+    ).catch(() => {
       // offline or blocked — localStorage still has the data
     })
   }, [uid, cloudLoaded, products, deleted])
@@ -256,18 +278,6 @@ function AppContent({ uid, userEmail }: AppContentProps) {
     const product = createDefaultProduct(officialRate)
     setProducts((prev) => [...prev, product])
     setLastAddedId(product.id)
-  }
-
-  function isEmptyDraft(p: Product): boolean {
-    return (
-      p.name.trim() === '' &&
-      p.category.trim() === '' &&
-      p.purchasePricePerUnit === 0 &&
-      p.notes.trim() === '' &&
-      p.sales.length === 0 &&
-      p.shipments.every((s) => s.quantity === 0) &&
-      p.expenses.every((e) => e.amount === 0)
-    )
   }
 
   function quickNewOrder() {
