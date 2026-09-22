@@ -62,6 +62,7 @@ export interface MarketingExpense {
   label: string
   amount: number
   currency: Currency
+  recurring: boolean
 }
 
 export interface ProductTotals {

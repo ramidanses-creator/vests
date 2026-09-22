@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import type { DeletedProduct, Product } from '../types'
+import { latestAutoBackupDate } from '../utils/persistence'
 
 interface BackupFile {
   products: Partial<Product>[]
@@ -15,6 +16,7 @@ interface Props {
 export function BackupTools({ products, deleted, onImport }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [error, setError] = useState<string | null>(null)
+  const autoBackupDate = latestAutoBackupDate()
 
   function handleExport() {
     const data: BackupFile = { products, deleted }
@@ -53,6 +55,11 @@ export function BackupTools({ products, deleted, onImport }: Props) {
     <div className="flex flex-col gap-3">
       <p className="text-xs text-slate-400">
         כל הנתונים שמורים רק בדפדפן הזה. מומלץ לייצא גיבוי מדי פעם — ובמיוחד לפני מעבר למכשיר או דפדפן אחר.
+      </p>
+      <p className="text-xs text-slate-500">
+        {autoBackupDate
+          ? `גיבוי אוטומטי אחרון (בדפדפן זה): ${new Date(autoBackupDate).toLocaleDateString('he-IL')}`
+          : 'עדיין לא נשמר גיבוי אוטומטי בדפדפן זה.'}
       </p>
       <div className="flex flex-wrap gap-2">
         <button

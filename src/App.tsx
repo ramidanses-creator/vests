@@ -1,4 +1,3 @@
-import { doc, getDoc, setDoc } from 'firebase/firestore'
 import { signOut } from 'firebase/auth'
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { AuthScreen } from './components/AuthScreen'
@@ -14,17 +13,16 @@ import { SalesCenter } from './components/SalesCenter'
 import { ShipmentSplitCalculator } from './components/ShipmentSplitCalculator'
 import { SummaryPanel } from './components/SummaryPanel'
 import { SwipeViews } from './components/SwipeViews'
-import { createDefaultProduct, generateSku } from './defaultProduct'
-import { auth, db } from './firebase'
+import { ToastContainer } from './components/ToastContainer'
+import { createDefaultProduct } from './defaultProduct'
+import { auth } from './firebase'
 import { useAuthUser } from './hooks/useAuthUser'
+import { useCloudSync } from './hooks/useCloudSync'
 import { useOfficialRate } from './hooks/useOfficialRate'
-import { PRODUCT_STATUS_LABELS, type DeletedProduct, type MarketingExpense, type Product } from './types'
+import { useToast } from './hooks/useToast'
+import { PRODUCT_STATUS_LABELS, type MarketingExpense, type Product } from './types'
 import { countInventoryAlerts } from './utils/calculations'
-
-const STORAGE_KEY = 'import-tracker-products'
-const TRASH_KEY = 'import-tracker-deleted-products'
-const SEEN_REMOTE_IDS_KEY = 'import-tracker-seen-remote-ids'
-const MARKETING_KEY = 'import-tracker-marketing-expenses'
+import { isEmptyDraft, normalizeProduct } from './utils/persistence'
 
 type View = 'active' | 'standby' | 'inventory'
 const VIEW_ORDER: View[] = ['active', 'standby', 'inventory']
@@ -54,151 +52,21 @@ const FAB_ACTIONS: FabAction[] = [
   { id: 'arrival', label: 'קבלת משלוח' },
 ]
 
-function loadSeenRemoteIds(): Set<string> {
-  try {
-    const raw = localStorage.getItem(SEEN_REMOTE_IDS_KEY)
-    if (!raw) return new Set()
-    return new Set(JSON.parse(raw) as string[])
-  } catch {
-    return new Set()
-  }
-}
-
-function saveSeenRemoteIds(ids: Set<string>) {
-  try {
-    localStorage.setItem(SEEN_REMOTE_IDS_KEY, JSON.stringify(Array.from(ids)))
-  } catch {
-    // ignore storage failures
-  }
-}
-
-function normalizeProduct(raw: Partial<Product> & { quantityImported?: number; hasArrived?: boolean; expectedArrivalDate?: string }): Product {
-  const fallback = createDefaultProduct()
-  const shipments =
-    raw.shipments ??
-    (raw.quantityImported !== undefined
-      ? [
-          {
-            id: crypto.randomUUID(),
-            quantity: raw.quantityImported,
-            arrived: raw.hasArrived ?? true,
-            expectedDate: raw.expectedArrivalDate ?? '',
-          },
-        ]
-      : fallback.shipments)
-  return {
-    ...fallback,
-    ...raw,
-    sku: raw.sku ?? generateSku(),
-    category: raw.category ?? fallback.category,
-    purchasePricePerUnit: raw.purchasePricePerUnit ?? fallback.purchasePricePerUnit,
-    purchaseCurrency: raw.purchaseCurrency ?? fallback.purchaseCurrency,
-    usdRateOverride: raw.usdRateOverride ?? null,
-    targetProfitPercent: raw.targetProfitPercent ?? fallback.targetProfitPercent,
-    status: raw.status ?? fallback.status,
-    shipments,
-    expenses: raw.expenses ?? fallback.expenses,
-    sales: (raw.sales ?? fallback.sales).map((s) => {
-      const legacy = s as typeof s & { returned?: boolean }
-      return {
-        ...s,
-        returnedQuantity: s.returnedQuantity ?? (legacy.returned ? s.quantity : 0),
-        returnReason: s.returnReason ?? null,
-        discountType: s.discountType ?? null,
-        discountValue: s.discountValue ?? 0,
-        invoiceNumber: s.invoiceNumber ?? '',
-        notes: s.notes ?? '',
-      }
-    }),
-  }
-}
-
-function isEmptyDraft(p: Product): boolean {
-  return (
-    p.name.trim() === '' &&
-    p.category.trim() === '' &&
-    p.purchasePricePerUnit === 0 &&
-    p.notes.trim() === '' &&
-    p.sales.length === 0 &&
-    p.shipments.every((s) => s.quantity === 0) &&
-    p.expenses.every((e) => e.amount === 0)
-  )
-}
-
-// Untouched "new order" drafts are never persisted — only kept in memory
-// until the user either fills them in or navigates away.
-function withoutEmptyDrafts(products: Product[]): Product[] {
-  return products.filter((p) => !isEmptyDraft(p))
-}
-
-function loadProducts(): Product[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return []
-    const parsed = JSON.parse(raw) as Partial<Product>[]
-    return parsed.map(normalizeProduct)
-  } catch {
-    return []
-  }
-}
-
-function saveProducts(products: Product[]) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(withoutEmptyDrafts(products)))
-  } catch {
-    // ignore storage failures (private browsing, quota, etc.)
-  }
-}
-
-function loadDeleted(): DeletedProduct[] {
-  try {
-    const raw = localStorage.getItem(TRASH_KEY)
-    if (!raw) return []
-    const parsed = JSON.parse(raw) as { product: Partial<Product>; deletedAt: string }[]
-    return parsed.map((d) => ({ product: normalizeProduct(d.product), deletedAt: d.deletedAt }))
-  } catch {
-    return []
-  }
-}
-
-function saveDeleted(deleted: DeletedProduct[]) {
-  try {
-    localStorage.setItem(TRASH_KEY, JSON.stringify(deleted))
-  } catch {
-    // ignore storage failures
-  }
-}
-
-function loadMarketingExpenses(): MarketingExpense[] {
-  try {
-    const raw = localStorage.getItem(MARKETING_KEY)
-    if (!raw) return []
-    return JSON.parse(raw) as MarketingExpense[]
-  } catch {
-    return []
-  }
-}
-
-function saveMarketingExpenses(expenses: MarketingExpense[]) {
-  try {
-    localStorage.setItem(MARKETING_KEY, JSON.stringify(expenses))
-  } catch {
-    // ignore storage failures
-  }
-}
-
 interface AppContentProps {
   uid: string
   userEmail: string | null
 }
 
 function AppContent({ uid, userEmail }: AppContentProps) {
-  const [products, setProducts] = useState<Product[]>(() => {
-    const stored = loadProducts()
-    return stored.length > 0 ? stored : [createDefaultProduct()]
-  })
-  const [deleted, setDeleted] = useState<DeletedProduct[]>(() => loadDeleted())
-  const [marketingExpenses, setMarketingExpenses] = useState<MarketingExpense[]>(() => loadMarketingExpenses())
+  const {
+    products,
+    setProducts,
+    deleted,
+    setDeleted,
+    marketingExpenses,
+    setMarketingExpenses,
+    previousLoginAt,
+  } = useCloudSync(uid)
   const [view, setView] = useState<View>('active')
   const [lastAddedId, setLastAddedId] = useState<string | null>(null)
   const [chatOpen, setChatOpen] = useState(false)
@@ -207,85 +75,8 @@ function AppContent({ uid, userEmail }: AppContentProps) {
   const [profileOpen, setProfileOpen] = useState(false)
   const [fabOpen, setFabOpen] = useState(false)
   const productsViewRef = useRef<HTMLElement>(null)
-  const [cloudLoaded, setCloudLoaded] = useState(false)
-  const [previousLoginAt, setPreviousLoginAt] = useState<number | null>(null)
   const { officialRate } = useOfficialRate()
-
-  useEffect(() => {
-    saveProducts(products)
-  }, [products])
-
-  useEffect(() => {
-    saveDeleted(deleted)
-  }, [deleted])
-
-  useEffect(() => {
-    saveMarketingExpenses(marketingExpenses)
-  }, [marketingExpenses])
-
-  // Load this user's data from Firestore once on sign-in, record the previous
-  // login time for display, then stamp this session as the new "last login".
-  useEffect(() => {
-    setCloudLoaded(false)
-    let cancelled = false
-    const userDocRef = doc(db, 'users', uid)
-    getDoc(userDocRef).then((snap) => {
-      if (cancelled) return
-      if (snap.exists()) {
-        const data = snap.data() as {
-          products?: Partial<Product>[]
-          deleted?: { product: Partial<Product>; deletedAt: string }[]
-          marketingExpenses?: MarketingExpense[]
-          lastLoginAt?: number
-        }
-        if (data.products) setProducts(data.products.map(normalizeProduct))
-        if (data.deleted) setDeleted(data.deleted.map((d) => ({ product: normalizeProduct(d.product), deletedAt: d.deletedAt })))
-        if (data.marketingExpenses) setMarketingExpenses(data.marketingExpenses)
-        setPreviousLoginAt(data.lastLoginAt ?? null)
-      } else {
-        setPreviousLoginAt(null)
-      }
-      setCloudLoaded(true)
-      setDoc(userDocRef, { lastLoginAt: Date.now() }, { merge: true }).catch(() => {})
-    })
-    return () => {
-      cancelled = true
-    }
-  }, [uid])
-
-  // Push local changes to Firestore once the cloud data has finished loading,
-  // so a fresh sign-in doesn't overwrite cloud data with stale local state.
-  // merge:true keeps the lastLoginAt field written above intact.
-  useEffect(() => {
-    if (!cloudLoaded) return
-    setDoc(
-      doc(db, 'users', uid),
-      { products: withoutEmptyDrafts(products), deleted, marketingExpenses, updatedAt: Date.now() },
-      { merge: true },
-    ).catch(() => {
-      // offline or blocked — localStorage still has the data
-    })
-  }, [uid, cloudLoaded, products, deleted, marketingExpenses])
-
-  useEffect(() => {
-    fetch('products.json')
-      .then((res) => (res.ok ? res.json() : []))
-      .then((remote: Partial<Product>[]) => {
-        if (!Array.isArray(remote) || remote.length === 0) return
-        const seen = loadSeenRemoteIds()
-        setProducts((prev) => {
-          const existingIds = new Set(prev.map((p) => p.id))
-          const toAdd = remote.filter((r) => r.id && !existingIds.has(r.id) && !seen.has(r.id))
-          if (toAdd.length === 0) return prev
-          toAdd.forEach((r) => seen.add(r.id as string))
-          saveSeenRemoteIds(seen)
-          return [...prev, ...toAdd.map(normalizeProduct)]
-        })
-      })
-      .catch(() => {
-        // no remote products file yet, or offline — ignore
-      })
-  }, [])
+  const { toasts, showToast, dismiss } = useToast()
 
   // Lock in the USD rate for any product that doesn't have one yet, once a live rate is available.
   useEffect(() => {
@@ -294,7 +85,7 @@ function AppContent({ uid, userEmail }: AppContentProps) {
       if (!prev.some((p) => p.usdRateOverride === null)) return prev
       return prev.map((p) => (p.usdRateOverride === null ? { ...p, usdRateOverride: officialRate } : p))
     })
-  }, [officialRate])
+  }, [officialRate, setProducts])
 
   function updateProduct(updated: Product) {
     setProducts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)))
@@ -361,6 +152,7 @@ function AppContent({ uid, userEmail }: AppContentProps) {
     setProducts((prev) => prev.filter((p) => p.id !== id))
     if (target) {
       setDeleted((prev) => [{ product: target, deletedAt: new Date().toISOString() }, ...prev].slice(0, 50))
+      showToast(`"${target.name || 'מוצר ללא שם'}" הועבר להיסטוריית מחיקות`, 'info')
     }
   }
 
@@ -369,24 +161,29 @@ function AppContent({ uid, userEmail }: AppContentProps) {
     setDeleted((prev) => prev.filter((d) => d.product.id !== id))
     if (entry) {
       setProducts((prev) => [...prev, entry.product])
+      showToast(`"${entry.product.name || 'מוצר ללא שם'}" שוחזר`, 'success')
     }
   }
 
   function purgeDeleted(id: string) {
     setDeleted((prev) => prev.filter((d) => d.product.id !== id))
+    showToast('המוצר נמחק לצמיתות', 'info')
   }
 
   function addMarketingExpense(expense: MarketingExpense) {
     setMarketingExpenses((prev) => [expense, ...prev])
+    showToast('הוצאת הפרסום נוספה', 'success')
   }
 
   function removeMarketingExpense(id: string) {
     setMarketingExpenses((prev) => prev.filter((e) => e.id !== id))
+    showToast('הוצאת הפרסום נמחקה', 'info')
   }
 
   function importBackup(data: { products: Partial<Product>[]; deleted: { product: Partial<Product>; deletedAt: string }[] }) {
     setProducts(data.products.map(normalizeProduct))
     setDeleted(data.deleted.map((d) => ({ product: normalizeProduct(d.product), deletedAt: d.deletedAt })))
+    showToast('הגיבוי יובא בהצלחה', 'success')
   }
 
   const standbyCount = useMemo(() => products.filter((p) => p.status === 'standby').length, [products])
@@ -456,6 +253,7 @@ function AppContent({ uid, userEmail }: AppContentProps) {
 
   return (
     <div className="min-h-screen pb-28" dir="rtl">
+      <ToastContainer toasts={toasts} onDismiss={dismiss} />
       <header className="sticky top-0 z-10 border-b border-white/10 bg-[#0f1117]/90 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center justify-end px-4 py-3">
           <div className="relative">
