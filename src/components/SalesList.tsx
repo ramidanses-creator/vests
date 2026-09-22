@@ -132,11 +132,9 @@ export function SalesList({ sales, onChange, suggestedSalePrice = 0, customers, 
                       ↩ {sale.returnedQuantity} {sale.returnReason === 'restocked' ? 'חזרו למלאי' : 'בלאי'}
                     </span>
                   )}
-                  {hasDiscount && (
+                  {hasDiscount && sale.discountType !== 'finalPricePerUnit' && (
                     <span className="rounded-md bg-sky-500/20 px-2 py-0.5 text-[11px] font-medium text-sky-300">
-                      {sale.discountType === 'finalPricePerUnit'
-                        ? `שולם בפועל: ${formatCurrency(sale.discountValue)}/יח׳`
-                        : `הנחה ${sale.discountType === 'percent' ? `${sale.discountValue}%` : formatCurrency(sale.discountValue)}`}
+                      הנחה {sale.discountType === 'percent' ? `${sale.discountValue}%` : formatCurrency(sale.discountValue)}
                     </span>
                   )}
                   {sale.invoiceNumber && (
