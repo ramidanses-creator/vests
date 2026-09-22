@@ -7,7 +7,7 @@ import { ChatEntry } from './components/ChatEntry'
 import { CollapsibleSection } from './components/CollapsibleSection'
 import { CurrencyConverter } from './components/CurrencyConverter'
 import { DeletedProducts } from './components/DeletedProducts'
-import { InventoryByCategory } from './components/InventoryByCategory'
+import { Analytics } from './components/Analytics'
 import { InventoryPage } from './components/InventoryPage'
 import { ProductCard } from './components/ProductCard'
 import { SalesCenter } from './components/SalesCenter'
@@ -28,16 +28,18 @@ const SEEN_REMOTE_IDS_KEY = 'import-tracker-seen-remote-ids'
 type View = 'active' | 'standby' | 'inventory'
 const VIEW_ORDER: View[] = ['active', 'standby', 'inventory']
 
-type UtilityId = 'inventory' | 'split' | 'sales' | 'backup' | 'currency'
+type UtilityId = 'inventory' | 'split' | 'sales' | 'backup' | 'currency' | 'analytics'
 const UTILITIES: { id: UtilityId; label: string; shortLabel: string }[] = [
-  { id: 'inventory', label: 'מלאי לפי קטגוריה', shortLabel: 'מלאי' },
+  { id: 'inventory', label: 'ניהול מלאי', shortLabel: 'מלאי' },
   { id: 'split', label: 'פיצול משלוח/מכס', shortLabel: 'פיצול' },
+  { id: 'analytics', label: 'אנליטיקה כלכלית', shortLabel: 'אנליטיקה' },
   { id: 'sales', label: 'מכירות והחזרות', shortLabel: 'מכירות' },
   { id: 'backup', label: 'גיבוי ושחזור', shortLabel: 'גיבוי' },
   { id: 'currency', label: 'המרת מטבע', shortLabel: 'מטח' },
 ]
-// The square nav buttons show the general tools; sales lives in the FAB menu and
-// backup lives in the settings dropdown instead.
+// The square nav buttons show the general tools, split evenly (2+2). "מלאי" jumps
+// straight to the full inventory tab instead of opening a page of its own; sales
+// lives in the FAB menu and backup lives in the settings dropdown.
 const SQUARE_TOOLS = UTILITIES.filter((u) => u.id !== 'sales' && u.id !== 'backup')
 
 interface FabAction {
@@ -252,8 +254,23 @@ function AppContent({ uid, userEmail }: AppContentProps) {
     setLastAddedId(product.id)
   }
 
+  function isEmptyDraft(p: Product): boolean {
+    return (
+      p.name.trim() === '' &&
+      p.category.trim() === '' &&
+      p.purchasePricePerUnit === 0 &&
+      p.notes.trim() === '' &&
+      p.sales.length === 0 &&
+      p.shipments.every((s) => s.quantity === 0) &&
+      p.expenses.every((e) => e.amount === 0)
+    )
+  }
+
   function quickNewOrder() {
-    addProduct()
+    const lastDraft = lastAddedId ? products.find((p) => p.id === lastAddedId) : undefined
+    if (!lastDraft || !isEmptyDraft(lastDraft)) {
+      addProduct()
+    }
     setView('active')
     setActiveUtility(null)
     requestAnimationFrame(() => {
@@ -270,6 +287,15 @@ function AppContent({ uid, userEmail }: AppContentProps) {
   function quickArrival() {
     setView('inventory')
     setActiveUtility(null)
+  }
+
+  function openTool(id: UtilityId) {
+    setFabOpen(false)
+    if (id === 'inventory') {
+      quickArrival()
+      return
+    }
+    setActiveUtility((prev) => (prev === id ? null : id))
   }
 
   function handleFabAction(id: string) {
@@ -410,6 +436,31 @@ function AppContent({ uid, userEmail }: AppContentProps) {
       </header>
 
       <main className="mx-auto mt-6 flex max-w-5xl flex-col gap-6 px-4">
+        {activeUtility ? (
+          <div className="flex flex-col gap-4">
+            <button
+              onClick={() => setActiveUtility(null)}
+              className="self-start text-sm font-medium text-teal-300 hover:text-teal-200"
+            >
+              ← חזרה
+            </button>
+            <h2 className="text-lg font-semibold text-slate-100">
+              {UTILITIES.find((u) => u.id === activeUtility)?.label}
+            </h2>
+            {activeUtility === 'split' && (
+              <ShipmentSplitCalculator products={products} onChange={updateProduct} usdToIlsRate={officialRate} />
+            )}
+            {activeUtility === 'analytics' && <Analytics products={products} usdToIlsRate={officialRate} />}
+            {activeUtility === 'sales' && (
+              <SalesCenter products={filteredProducts} onChange={updateProduct} usdToIlsRate={officialRate} />
+            )}
+            {activeUtility === 'backup' && (
+              <BackupTools products={products} deleted={deleted} onImport={importBackup} />
+            )}
+            {activeUtility === 'currency' && <CurrencyConverter />}
+          </div>
+        ) : (
+          <>
         <SummaryPanel products={products} usdToIlsRate={officialRate} />
 
         {chatOpen ? (
@@ -482,39 +533,9 @@ function AppContent({ uid, userEmail }: AppContentProps) {
         <CollapsibleSection title="היסטוריית מחיקות" accent="rose">
           <DeletedProducts deleted={deleted} onRestore={restoreProduct} onPurge={purgeDeleted} />
         </CollapsibleSection>
+          </>
+        )}
       </main>
-
-      {activeUtility && (
-        <div
-          className="fixed inset-0 z-40 flex items-end justify-center bg-black/60"
-          onClick={() => setActiveUtility(null)}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="animate-[grow_200ms_ease-out] max-h-[75vh] w-full max-w-5xl origin-bottom overflow-y-auto rounded-t-2xl border-t border-white/10 bg-[#1a1b20] p-4"
-          >
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-slate-200">
-                {UTILITIES.find((u) => u.id === activeUtility)?.label}
-              </h2>
-              <button onClick={() => setActiveUtility(null)} className="text-slate-500 hover:text-slate-300">
-                ✕
-              </button>
-            </div>
-            {activeUtility === 'inventory' && <InventoryByCategory products={products} usdToIlsRate={officialRate} />}
-            {activeUtility === 'split' && (
-              <ShipmentSplitCalculator products={products} onChange={updateProduct} usdToIlsRate={officialRate} />
-            )}
-            {activeUtility === 'sales' && (
-              <SalesCenter products={filteredProducts} onChange={updateProduct} usdToIlsRate={officialRate} />
-            )}
-            {activeUtility === 'backup' && (
-              <BackupTools products={products} deleted={deleted} onImport={importBackup} />
-            )}
-            {activeUtility === 'currency' && <CurrencyConverter />}
-          </div>
-        </div>
-      )}
 
       {fabOpen && <div className="fixed inset-0 z-30" onClick={() => setFabOpen(false)} />}
 
@@ -524,10 +545,7 @@ function AppContent({ uid, userEmail }: AppContentProps) {
             {SQUARE_TOOLS.slice(0, 2).map((tool) => (
               <button
                 key={tool.id}
-                onClick={() => {
-                  setFabOpen(false)
-                  setActiveUtility((prev) => (prev === tool.id ? null : tool.id))
-                }}
+                onClick={() => openTool(tool.id)}
                 className={`relative flex h-14 min-w-[70px] items-center justify-center rounded-xl border px-3 text-center text-sm font-medium transition-colors ${
                   activeUtility === tool.id
                     ? 'border-teal-500 bg-teal-950/30 text-teal-200'
@@ -550,10 +568,7 @@ function AppContent({ uid, userEmail }: AppContentProps) {
             {SQUARE_TOOLS.slice(2).map((tool) => (
               <button
                 key={tool.id}
-                onClick={() => {
-                  setFabOpen(false)
-                  setActiveUtility((prev) => (prev === tool.id ? null : tool.id))
-                }}
+                onClick={() => openTool(tool.id)}
                 className={`flex h-14 min-w-[70px] items-center justify-center rounded-xl border px-3 text-center text-sm font-medium transition-colors ${
                   activeUtility === tool.id
                     ? 'border-teal-500 bg-teal-950/30 text-teal-200'
