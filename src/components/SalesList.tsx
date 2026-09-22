@@ -111,7 +111,15 @@ export function SalesList({ sales, onChange, suggestedSalePrice = 0, customers, 
                 <div className="flex items-center gap-2 text-sm">
                   <span className="text-slate-400">{new Date(sale.date).toLocaleDateString('he-IL')}</span>
                   <span className="font-semibold text-slate-100">
-                    {sale.quantity} × {formatCurrency(sale.pricePerUnit)}
+                    {sale.quantity} ×{' '}
+                    {hasDiscount ? (
+                      <>
+                        <span className="text-slate-500 line-through">{formatCurrency(sale.pricePerUnit)}</span>{' '}
+                        {formatCurrency(effectivePricePerUnit)}
+                      </>
+                    ) : (
+                      formatCurrency(sale.pricePerUnit)
+                    )}
                   </span>
                   {hasReturn && (
                     <span
