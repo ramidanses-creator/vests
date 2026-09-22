@@ -5,13 +5,14 @@ import { formatCurrency, saleNetRevenue } from '../utils/calculations'
 interface Props {
   sales: Sale[]
   onChange: (sales: Sale[]) => void
+  suggestedSalePrice?: number
 }
 
 function today(): string {
   return new Date().toISOString().slice(0, 10)
 }
 
-export function SalesList({ sales, onChange }: Props) {
+export function SalesList({ sales, onChange, suggestedSalePrice = 0 }: Props) {
   const [openId, setOpenId] = useState<string | null>(null)
 
   function updateSale(id: string, patch: Partial<Sale>) {
@@ -88,6 +89,9 @@ export function SalesList({ sales, onChange }: Props) {
           const netQty = sale.quantity - sale.returnedQuantity
           const grossTotal = netQty * sale.pricePerUnit
           const total = saleNetRevenue(sale)
+          const effectivePricePerUnit = netQty > 0 ? total / netQty : sale.pricePerUnit
+          const priceDiff = suggestedSalePrice > 0 ? suggestedSalePrice - effectivePricePerUnit : 0
+          const priceDiffPercent = suggestedSalePrice > 0 ? (priceDiff / suggestedSalePrice) * 100 : 0
 
           return (
             <div
@@ -161,7 +165,7 @@ export function SalesList({ sales, onChange }: Props) {
                       />
                     </label>
                     <label className="flex flex-col gap-1 text-xs text-slate-400">
-                      מחיר ליחידה
+                      מחיר ליחידה {suggestedSalePrice > 0 && `(מומלץ: ${formatCurrency(suggestedSalePrice)})`}
                       <input
                         type="text"
                         inputMode="decimal"
@@ -188,6 +192,23 @@ export function SalesList({ sales, onChange }: Props) {
                       מחק מכירה
                     </button>
                   </div>
+
+                  {suggestedSalePrice > 0 && (
+                    <p className="text-xs text-slate-500">
+                      מחיר בפועל ליחידה (אחרי הנחה): {formatCurrency(effectivePricePerUnit)} ·{' '}
+                      {priceDiff > 0.005 ? (
+                        <span className="text-amber-300">
+                          {priceDiffPercent.toFixed(1)}% מתחת למחיר המומלץ ({formatCurrency(priceDiff)} ליחידה)
+                        </span>
+                      ) : priceDiff < -0.005 ? (
+                        <span className="text-emerald-300">
+                          {Math.abs(priceDiffPercent).toFixed(1)}% מעל המחיר המומלץ
+                        </span>
+                      ) : (
+                        <span className="text-slate-400">בדיוק לפי המחיר המומלץ</span>
+                      )}
+                    </p>
+                  )}
 
                   <label className="flex flex-col gap-1 text-xs text-slate-400">
                     הערות

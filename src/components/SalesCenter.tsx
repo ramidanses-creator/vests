@@ -65,7 +65,11 @@ export function SalesCenter({ products, onChange, usdToIlsRate }: Props) {
               סגור
             </button>
           </div>
-          <SalesList sales={expandedProduct.sales} onChange={(sales) => onChange({ ...expandedProduct, sales })} />
+          <SalesList
+            sales={expandedProduct.sales}
+            onChange={(sales) => onChange({ ...expandedProduct, sales })}
+            suggestedSalePrice={calculateProductTotals(expandedProduct, usdToIlsRate).suggestedSalePrice}
+          />
         </div>
       )}
     </div>
