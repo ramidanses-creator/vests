@@ -255,6 +255,9 @@ export function CustomersPage({ customers, products, onAdd, onUpdate, onRemove }
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
+                        {hasDiscount && (
+                          <span className="text-xs text-slate-500 line-through">{formatCurrency(row.grossTotal)}</span>
+                        )}
                         <span className="font-semibold text-slate-200">{formatCurrency(row.total)}</span>
                         <span className="text-slate-500">{isOpen ? '︿' : '﹀'}</span>
                       </div>

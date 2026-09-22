@@ -143,6 +143,9 @@ export function SalesList({ sales, onChange, suggestedSalePrice = 0, customers, 
                   )}
                 </div>
                 <div className="flex items-center gap-2">
+                  {hasDiscount && (
+                    <span className="text-xs text-slate-500 line-through">{formatCurrency(grossTotal)}</span>
+                  )}
                   <span className="text-sm font-semibold text-slate-200">{formatCurrency(total)}</span>
                   <span className="text-slate-500">{isOpen ? '︿' : '﹀'}</span>
                 </div>
