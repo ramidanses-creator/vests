@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { Expense } from '../types'
 import { expenseAmountInIls, formatCurrency } from '../utils/calculations'
+import { DecimalInput } from './DecimalInput'
 
 interface Props {
   expenses: Expense[]
@@ -56,12 +57,10 @@ function ExpenseRow({
           onChange={(e) => onUpdate(expense.id, { label: e.target.value })}
           className="min-w-0 flex-1 rounded border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-slate-100"
         />
-        <input
-          type="text"
-          inputMode="decimal"
+        <DecimalInput
           placeholder="סכום"
-          value={expense.amount === 0 ? '' : expense.amount}
-          onChange={(e) => onUpdate(expense.id, { amount: Number(e.target.value) || 0 })}
+          value={expense.amount}
+          onChange={(amount) => onUpdate(expense.id, { amount })}
           className="w-24 rounded border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-slate-100"
         />
         <div className="flex overflow-hidden rounded-lg border border-white/10 text-xs">

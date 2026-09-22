@@ -1,4 +1,5 @@
 import type { Shipment } from '../types'
+import { DecimalInput } from './DecimalInput'
 
 interface Props {
   shipments: Shipment[]
@@ -36,12 +37,10 @@ export function ShipmentsList({ shipments, onChange }: Props) {
         {shipments.map((s, i) => (
           <div key={s.id} className="flex flex-wrap items-center gap-2">
             <span className="w-14 text-xs text-slate-500">חלק {i + 1}</span>
-            <input
-              type="text"
-              inputMode="decimal"
+            <DecimalInput
               placeholder="כמות"
-              value={s.quantity === 0 ? '' : s.quantity}
-              onChange={(e) => updateShipment(s.id, { quantity: Number(e.target.value) || 0 })}
+              value={s.quantity}
+              onChange={(quantity) => updateShipment(s.id, { quantity })}
               className="w-20 rounded border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-slate-100"
             />
             <button

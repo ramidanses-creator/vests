@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { Product } from '../types'
 import { calculateProductTotals, formatCurrency } from '../utils/calculations'
+import { DecimalInput } from './DecimalInput'
 import { ExpensesList } from './ExpensesList'
 import { ShipmentsList } from './ShipmentsList'
 
@@ -119,11 +120,9 @@ export function ProductCard({
               <label className="flex flex-col gap-1 text-xs text-slate-400">
                 מחיר רכישה ליחידה
                 <div className="flex items-center gap-1">
-                  <input
-                    type="text"
-                    inputMode="decimal"
-                    value={product.purchasePricePerUnit === 0 ? '' : product.purchasePricePerUnit}
-                    onChange={(e) => onChange({ ...product, purchasePricePerUnit: Number(e.target.value) || 0 })}
+                  <DecimalInput
+                    value={product.purchasePricePerUnit}
+                    onChange={(purchasePricePerUnit) => onChange({ ...product, purchasePricePerUnit })}
                     className="w-full rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-slate-100 focus:border-teal-500 focus:outline-none"
                   />
                   <div className="flex overflow-hidden rounded-lg border border-white/10 text-xs">

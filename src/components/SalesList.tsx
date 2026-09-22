@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { CustomerPicker } from './CustomerPicker'
+import { DecimalInput } from './DecimalInput'
 import type { Customer, DiscountType, ReturnReason, Sale } from '../types'
 import { formatCurrency, saleNetRevenue } from '../utils/calculations'
 
@@ -168,29 +169,24 @@ export function SalesList({ sales, onChange, suggestedSalePrice = 0, customers, 
                     </label>
                     <label className="flex flex-col gap-1 text-xs text-slate-400">
                       כמות שנמכרה
-                      <input
-                        type="text"
-                        inputMode="decimal"
+                      <DecimalInput
                         placeholder="כמות"
-                        value={sale.quantity === 0 ? '' : sale.quantity}
-                        onChange={(e) => {
-                          const quantity = Number(e.target.value) || 0
+                        value={sale.quantity}
+                        onChange={(quantity) =>
                           updateSale(sale.id, {
                             quantity,
                             returnedQuantity: Math.min(sale.returnedQuantity, quantity),
                           })
-                        }}
+                        }
                         className="w-20 rounded border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-slate-100"
                       />
                     </label>
                     <label className="flex flex-col gap-1 text-xs text-slate-400">
                       מחיר ליחידה {suggestedSalePrice > 0 && `(מומלץ: ${formatCurrency(suggestedSalePrice)})`}
-                      <input
-                        type="text"
-                        inputMode="decimal"
+                      <DecimalInput
                         placeholder="מחיר ליחידה"
-                        value={sale.pricePerUnit === 0 ? '' : sale.pricePerUnit}
-                        onChange={(e) => updateSale(sale.id, { pricePerUnit: Number(e.target.value) || 0 })}
+                        value={sale.pricePerUnit}
+                        onChange={(pricePerUnit) => updateSale(sale.id, { pricePerUnit })}
                         className="w-28 rounded border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-slate-100"
                       />
                     </label>
@@ -275,12 +271,11 @@ export function SalesList({ sales, onChange, suggestedSalePrice = 0, customers, 
                               %
                             </button>
                           </div>
-                          <input
-                            type="text"
-                            inputMode="decimal"
+                          <DecimalInput
                             placeholder="0"
-                            value={sale.discountValue === 0 ? '' : sale.discountValue}
-                            onChange={(e) => setDiscount(sale, sale.discountType ?? 'amount', Number(e.target.value) || 0)}
+                            value={sale.discountValue}
+                            max={sale.discountType === 'percent' ? 100 : undefined}
+                            onChange={(v) => setDiscount(sale, sale.discountType ?? 'amount', v)}
                             className="w-20 rounded border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-slate-100"
                           />
                           <button onClick={() => clearDiscount(sale)} className="text-xs text-slate-500 hover:text-slate-300">
@@ -324,11 +319,9 @@ export function SalesList({ sales, onChange, suggestedSalePrice = 0, customers, 
                             >
                               −
                             </button>
-                            <input
-                              type="text"
-                              inputMode="decimal"
+                            <DecimalInput
                               value={sale.returnedQuantity}
-                              onChange={(e) => setReturnedQuantity(sale, Number(e.target.value) || 0)}
+                              onChange={(v) => setReturnedQuantity(sale, v)}
                               className="w-12 bg-black/20 py-1 text-center text-sm text-slate-100"
                             />
                             <button
