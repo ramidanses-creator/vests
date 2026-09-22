@@ -105,6 +105,8 @@ function normalizeProduct(raw: Partial<Product> & { quantityImported?: number; h
         returnReason: s.returnReason ?? null,
         discountType: s.discountType ?? null,
         discountValue: s.discountValue ?? 0,
+        invoiceNumber: s.invoiceNumber ?? '',
+        notes: s.notes ?? '',
       }
     }),
   }

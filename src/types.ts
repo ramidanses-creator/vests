@@ -24,6 +24,8 @@ export interface Sale {
   returnReason: ReturnReason | null
   discountType: DiscountType | null
   discountValue: number
+  invoiceNumber: string
+  notes: string
 }
 
 export interface Shipment {

@@ -31,6 +31,8 @@ export function SalesList({ sales, onChange }: Props) {
         returnReason: null,
         discountType: null,
         discountValue: 0,
+        invoiceNumber: '',
+        notes: '',
       },
     ])
     setOpenId(id)
@@ -117,6 +119,11 @@ export function SalesList({ sales, onChange }: Props) {
                       הנחה {sale.discountType === 'percent' ? `${sale.discountValue}%` : formatCurrency(sale.discountValue)}
                     </span>
                   )}
+                  {sale.invoiceNumber && (
+                    <span className="rounded-md bg-white/10 px-2 py-0.5 font-mono text-[11px] text-slate-300">
+                      #{sale.invoiceNumber}
+                    </span>
+                  )}
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-semibold text-slate-200">{formatCurrency(total)}</span>
@@ -164,6 +171,16 @@ export function SalesList({ sales, onChange }: Props) {
                         className="w-28 rounded border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-slate-100"
                       />
                     </label>
+                    <label className="flex flex-col gap-1 text-xs text-slate-400">
+                      מספר חשבונית
+                      <input
+                        type="text"
+                        placeholder="מס׳ חשבונית"
+                        value={sale.invoiceNumber}
+                        onChange={(e) => updateSale(sale.id, { invoiceNumber: e.target.value })}
+                        className="w-28 rounded border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-slate-100"
+                      />
+                    </label>
                     <button
                       onClick={() => removeSale(sale.id)}
                       className="mt-4 rounded-lg border border-white/10 px-2 py-1.5 text-xs text-rose-300 hover:bg-rose-500/10"
@@ -171,6 +188,17 @@ export function SalesList({ sales, onChange }: Props) {
                       מחק מכירה
                     </button>
                   </div>
+
+                  <label className="flex flex-col gap-1 text-xs text-slate-400">
+                    הערות
+                    <textarea
+                      placeholder="הערות למכירה..."
+                      value={sale.notes}
+                      onChange={(e) => updateSale(sale.id, { notes: e.target.value })}
+                      rows={2}
+                      className="rounded border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-slate-100"
+                    />
+                  </label>
 
                   <div className="rounded-lg bg-black/20 p-3">
                     {!hasDiscount ? (
