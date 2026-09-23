@@ -8,6 +8,9 @@ interface Props {
   usdToIlsRate: number | null
 }
 
+const isShippingExpense = (label: string) => label.includes('משלוח')
+const isCustomsExpense = (label: string) => label.includes('מכס')
+
 export function ShipmentSplitCalculator({ products, onChange, usdToIlsRate }: Props) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [shippingAmount, setShippingAmount] = useState('')
@@ -16,12 +19,35 @@ export function ShipmentSplitCalculator({ products, onChange, usdToIlsRate }: Pr
   const [customsCurrency, setCustomsCurrency] = useState<Currency>('ILS')
   const [applied, setApplied] = useState(false)
 
+  // Sums whatever shipping/customs expenses are already entered on each of the
+  // selected products (e.g. "משלוח" $100 on one, $3 on another) into one
+  // combined total, so the split starts from what's already known instead of
+  // asking the user to re-type it.
+  function autoFillFromSelection(ids: Set<string>) {
+    let shippingIlsSum = 0
+    let customsIlsSum = 0
+    products
+      .filter((p) => ids.has(p.id))
+      .forEach((p) => {
+        p.expenses.forEach((e) => {
+          const inIls = amountInIls(e.amount, e.currency, usdToIlsRate)
+          if (isShippingExpense(e.label)) shippingIlsSum += inIls
+          else if (isCustomsExpense(e.label)) customsIlsSum += inIls
+        })
+      })
+    setShippingAmount(shippingIlsSum > 0 ? String(Number(shippingIlsSum.toFixed(2))) : '')
+    setShippingCurrency('ILS')
+    setCustomsAmount(customsIlsSum > 0 ? String(Number(customsIlsSum.toFixed(2))) : '')
+    setCustomsCurrency('ILS')
+  }
+
   function toggle(id: string) {
     setApplied(false)
     setSelectedIds((prev) => {
       const next = new Set(prev)
       if (next.has(id)) next.delete(id)
       else next.add(id)
+      autoFillFromSelection(next)
       return next
     })
   }
@@ -37,8 +63,12 @@ export function ShipmentSplitCalculator({ products, onChange, usdToIlsRate }: Pr
   const shippingIls = amountInIls(Number(shippingAmount) || 0, shippingCurrency, usdToIlsRate)
   const customsIls = amountInIls(Number(customsAmount) || 0, customsCurrency, usdToIlsRate)
 
+  // Fall back to an equal split when none of the selected products have a
+  // purchase price entered yet (so the proportional weight is unknown) —
+  // otherwise the combined amount would silently vanish instead of landing
+  // somewhere.
   const shares = rows.map((r) => {
-    const share = totalValue > 0 ? r.value / totalValue : 0
+    const share = totalValue > 0 ? r.value / totalValue : rows.length > 0 ? 1 / rows.length : 0
     return {
       product: r.product,
       share,
@@ -49,11 +79,14 @@ export function ShipmentSplitCalculator({ products, onChange, usdToIlsRate }: Pr
 
   function applySplit() {
     shares.forEach(({ product, shippingShare, customsShare }) => {
-      const newExpenses = [...product.expenses]
+      // Replace any existing shipping/customs lines (the per-product amounts
+      // that were summed into the combined total above) with the freshly
+      // computed proportional share, instead of piling another line on top.
+      const newExpenses = product.expenses.filter((e) => !isShippingExpense(e.label) && !isCustomsExpense(e.label))
       if (shippingShare > 0) {
         newExpenses.push({
           id: crypto.randomUUID(),
-          label: 'משלוח (חלק יחסי ממשלוח משותף)',
+          label: 'משלוח (חלק יחסי מפיצול משותף)',
           amount: shippingShare,
           currency: 'ILS',
         })
@@ -61,7 +94,7 @@ export function ShipmentSplitCalculator({ products, onChange, usdToIlsRate }: Pr
       if (customsShare > 0) {
         newExpenses.push({
           id: crypto.randomUUID(),
-          label: 'מכס (חלק יחסי ממשלוח משותף)',
+          label: 'מכס (חלק יחסי מפיצול משותף)',
           amount: customsShare,
           currency: 'ILS',
         })
@@ -74,14 +107,21 @@ export function ShipmentSplitCalculator({ products, onChange, usdToIlsRate }: Pr
   return (
     <div className="flex flex-col gap-4">
       <p className="text-xs text-slate-400">
-        סמנו את המוצרים שהגיעו יחד באותו משלוח. עלות המשלוח והמכס הכוללת תתחלק בין המוצרים באופן יחסי לפי שווי הרכישה
-        של כל מוצר (כמות × מחיר רכישה).
+        סמנו את המוצרים שהגיעו יחד באותו משלוח. המשלוח והמכס שכבר הוזנו על כל מוצר (השורות "משלוח"/"מכס" שלו) יסוכמו
+        אוטומטית לעלות כוללת, שתתחלק מחדש בין המוצרים באופן יחסי לפי שווי הרכישה של כל אחד (כמות × מחיר רכישה) —
+        ותחליף את מה שהיה רשום על כל מוצר בנפרד. אפשר גם לערוך את הסכומים הכוללים ידנית לפני ההחלה.
       </p>
 
       <div className="flex flex-col gap-1.5">
         {products.map((p) => {
           const totals = calculateProductTotals(p, usdToIlsRate)
           const checked = selectedIds.has(p.id)
+          const existingShippingIls = p.expenses
+            .filter((e) => isShippingExpense(e.label))
+            .reduce((sum, e) => sum + amountInIls(e.amount, e.currency, usdToIlsRate), 0)
+          const existingCustomsIls = p.expenses
+            .filter((e) => isCustomsExpense(e.label))
+            .reduce((sum, e) => sum + amountInIls(e.amount, e.currency, usdToIlsRate), 0)
           return (
             <label
               key={p.id}
@@ -93,7 +133,14 @@ export function ShipmentSplitCalculator({ products, onChange, usdToIlsRate }: Pr
                 <input type="checkbox" checked={checked} onChange={() => toggle(p.id)} className="accent-sky-500" />
                 <span className="text-slate-200">{p.name || 'מוצר ללא שם'}</span>
               </span>
-              <span className="text-xs text-slate-400">שווי רכישה: {formatCurrency(totals.purchaseTotal)}</span>
+              <span className="text-left text-xs text-slate-400">
+                <span className="block">שווי רכישה: {formatCurrency(totals.purchaseTotal)}</span>
+                {(existingShippingIls > 0 || existingCustomsIls > 0) && (
+                  <span className="block text-slate-500">
+                    משלוח: {formatCurrency(existingShippingIls)} · מכס: {formatCurrency(existingCustomsIls)}
+                  </span>
+                )}
+              </span>
             </label>
           )
         })}
@@ -102,7 +149,7 @@ export function ShipmentSplitCalculator({ products, onChange, usdToIlsRate }: Pr
 
       <div className="flex flex-wrap gap-3">
         <label className="flex flex-col gap-1 text-xs text-slate-400">
-          עלות משלוח כוללת
+          עלות משלוח כוללת (מולאה אוטומטית, ניתן לערוך)
           <div className="flex items-center gap-1">
             <input
               type="text"
@@ -118,7 +165,7 @@ export function ShipmentSplitCalculator({ products, onChange, usdToIlsRate }: Pr
           </div>
         </label>
         <label className="flex flex-col gap-1 text-xs text-slate-400">
-          עלות מכס/מע״מ כוללת
+          עלות מכס/מע״מ כוללת (מולאה אוטומטית, ניתן לערוך)
           <div className="flex items-center gap-1">
             <input
               type="text"
@@ -137,6 +184,12 @@ export function ShipmentSplitCalculator({ products, onChange, usdToIlsRate }: Pr
 
       {shares.length > 0 && (
         <div className="flex flex-col gap-1.5 rounded-lg bg-black/20 p-3">
+          {totalValue === 0 && (
+            <p className="text-xs text-amber-300">
+              לאף אחד מהמוצרים שנבחרו אין עדיין מחיר רכישה, אז החלוקה כרגע שווה בין כולם. הזינו מחיר רכישה ליחידה כדי
+              לחלק לפי שווי אמיתי.
+            </p>
+          )}
           {shares.map(({ product, share, shippingShare, customsShare }) => (
             <div key={product.id} className="flex flex-wrap items-center justify-between gap-1 text-xs">
               <span className="text-slate-200">
