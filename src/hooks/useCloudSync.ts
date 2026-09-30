@@ -2,16 +2,19 @@ import { doc, getDoc, setDoc } from 'firebase/firestore'
 import { useEffect, useRef, useState } from 'react'
 import { db } from '../firebase'
 import { createDefaultProduct } from '../defaultProduct'
-import type { Customer, DeletedProduct, MarketingExpense, Product } from '../types'
+import type { ChecklistItem, Customer, DeletedProduct, MarketingExpense, Product } from '../types'
 import {
+  loadChecklist,
   loadCustomers,
   loadDeleted,
   loadMarketingExpenses,
   loadProducts,
   loadSeenRemoteIds,
+  normalizeChecklistItem,
   normalizeCustomer,
   normalizeMarketingExpense,
   normalizeProduct,
+  saveChecklist,
   saveCustomers,
   saveDeleted,
   saveMarketingExpenses,
@@ -31,12 +34,13 @@ export function useCloudSync(uid: string) {
   const [deleted, setDeleted] = useState<DeletedProduct[]>(() => loadDeleted())
   const [marketingExpenses, setMarketingExpenses] = useState<MarketingExpense[]>(() => loadMarketingExpenses())
   const [customers, setCustomers] = useState<Customer[]>(() => loadCustomers())
+  const [checklist, setChecklist] = useState<ChecklistItem[]>(() => loadChecklist())
   const [cloudLoaded, setCloudLoaded] = useState(false)
   const [previousLoginAt, setPreviousLoginAt] = useState<number | null>(null)
 
   useEffect(() => {
     saveProducts(products)
-    writeAutoBackupIfNeeded(products, deleted, marketingExpenses, customers)
+    writeAutoBackupIfNeeded(products, deleted, marketingExpenses, customers, checklist)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [products])
 
@@ -52,6 +56,10 @@ export function useCloudSync(uid: string) {
     saveCustomers(customers)
   }, [customers])
 
+  useEffect(() => {
+    saveChecklist(checklist)
+  }, [checklist])
+
   // Load this user's data from Firestore once on sign-in, record the previous
   // login time for display, then stamp this session as the new "last login".
   useEffect(() => {
@@ -66,12 +74,14 @@ export function useCloudSync(uid: string) {
           deleted?: { product: Partial<Product>; deletedAt: string }[]
           marketingExpenses?: Partial<MarketingExpense>[]
           customers?: Partial<Customer>[]
+          checklist?: Partial<ChecklistItem>[]
           lastLoginAt?: number
         }
         if (data.products) setProducts(data.products.map(normalizeProduct))
         if (data.deleted) setDeleted(data.deleted.map((d) => ({ product: normalizeProduct(d.product), deletedAt: d.deletedAt })))
         if (data.marketingExpenses) setMarketingExpenses(data.marketingExpenses.map(normalizeMarketingExpense))
         if (data.customers) setCustomers(data.customers.map(normalizeCustomer))
+        if (data.checklist) setChecklist(data.checklist.map(normalizeChecklistItem))
         setPreviousLoginAt(data.lastLoginAt ?? null)
       } else {
         setPreviousLoginAt(null)
@@ -95,7 +105,7 @@ export function useCloudSync(uid: string) {
     writeTimeoutRef.current = setTimeout(() => {
       setDoc(
         doc(db, 'users', uid),
-        { products: withoutEmptyDrafts(products), deleted, marketingExpenses, customers, updatedAt: Date.now() },
+        { products: withoutEmptyDrafts(products), deleted, marketingExpenses, customers, checklist, updatedAt: Date.now() },
         { merge: true },
       ).catch(() => {
         // offline or blocked — localStorage still has the data
@@ -104,7 +114,7 @@ export function useCloudSync(uid: string) {
     return () => {
       if (writeTimeoutRef.current) clearTimeout(writeTimeoutRef.current)
     }
-  }, [uid, cloudLoaded, products, deleted, marketingExpenses, customers])
+  }, [uid, cloudLoaded, products, deleted, marketingExpenses, customers, checklist])
 
   // Merge in products published to the static products.json file (e.g. via an
   // external feed), skipping ones already seen so they aren't re-added after deletion.
@@ -137,6 +147,8 @@ export function useCloudSync(uid: string) {
     setMarketingExpenses,
     customers,
     setCustomers,
+    checklist,
+    setChecklist,
     cloudLoaded,
     previousLoginAt,
   }

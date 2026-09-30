@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { AuthScreen } from './components/AuthScreen'
 import { BackupTools } from './components/BackupTools'
 import { ChatEntry } from './components/ChatEntry'
+import { ChecklistPanel } from './components/ChecklistPanel'
 import { CollapsibleSection } from './components/CollapsibleSection'
 import { CurrencyConverter } from './components/CurrencyConverter'
 import { CustomersPage } from './components/CustomersPage'
@@ -21,7 +22,7 @@ import { useAuthUser } from './hooks/useAuthUser'
 import { useCloudSync } from './hooks/useCloudSync'
 import { useOfficialRate } from './hooks/useOfficialRate'
 import { useToast } from './hooks/useToast'
-import { PRODUCT_STATUS_LABELS, type Customer, type MarketingExpense, type Product } from './types'
+import { PRODUCT_STATUS_LABELS, type ChecklistItem, type Customer, type MarketingExpense, type Product } from './types'
 import { countInventoryAlerts } from './utils/calculations'
 import { isEmptyDraft, normalizeProduct } from './utils/persistence'
 
@@ -69,6 +70,8 @@ function AppContent({ uid, userEmail }: AppContentProps) {
     setMarketingExpenses,
     customers,
     setCustomers,
+    checklist,
+    setChecklist,
     previousLoginAt,
   } = useCloudSync(uid)
   const [view, setView] = useState<View>('active')
@@ -198,6 +201,40 @@ function AppContent({ uid, userEmail }: AppContentProps) {
     const target = customers.find((c) => c.id === id)
     setCustomers((prev) => prev.filter((c) => c.id !== id))
     if (target) showToast(`הלקוח "${target.name}" נמחק`, 'info')
+  }
+
+  function addChecklistItem(text: string) {
+    const item: ChecklistItem = {
+      id: crypto.randomUUID(),
+      text,
+      done: false,
+      createdAt: new Date().toISOString(),
+      updates: [],
+    }
+    setChecklist((prev) => [item, ...prev])
+  }
+
+  function toggleChecklistDone(id: string) {
+    setChecklist((prev) => prev.map((i) => (i.id === id ? { ...i, done: !i.done } : i)))
+  }
+
+  function deleteChecklistItem(id: string) {
+    setChecklist((prev) => prev.filter((i) => i.id !== id))
+    showToast('המשימה נמחקה', 'info')
+  }
+
+  function editChecklistText(id: string, text: string) {
+    setChecklist((prev) => prev.map((i) => (i.id === id ? { ...i, text } : i)))
+  }
+
+  function addChecklistUpdate(id: string, text: string) {
+    setChecklist((prev) =>
+      prev.map((i) =>
+        i.id === id
+          ? { ...i, updates: [...i.updates, { id: crypto.randomUUID(), text, timestamp: new Date().toISOString() }] }
+          : i,
+      ),
+    )
   }
 
   function importBackup(data: { products: Partial<Product>[]; deleted: { product: Partial<Product>; deletedAt: string }[] }) {
@@ -371,6 +408,15 @@ function AppContent({ uid, userEmail }: AppContentProps) {
         ) : (
           <>
         <SummaryPanel products={products} usdToIlsRate={officialRate} />
+
+        <ChecklistPanel
+          items={checklist}
+          onAdd={addChecklistItem}
+          onToggleDone={toggleChecklistDone}
+          onDelete={deleteChecklistItem}
+          onEditText={editChecklistText}
+          onAddUpdate={addChecklistUpdate}
+        />
 
         {chatOpen ? (
           <ChatEntry

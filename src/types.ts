@@ -76,6 +76,20 @@ export interface MarketingExpense {
   recurring: boolean
 }
 
+export interface ChecklistUpdate {
+  id: string
+  text: string
+  timestamp: string
+}
+
+export interface ChecklistItem {
+  id: string
+  text: string
+  done: boolean
+  createdAt: string
+  updates: ChecklistUpdate[]
+}
+
 export interface ProductTotals {
   quantityImported: number
   quantityArrived: number

@@ -1,5 +1,5 @@
 import { createDefaultProduct, generateSku } from '../defaultProduct'
-import type { Customer, DeletedProduct, MarketingExpense, Product } from '../types'
+import type { ChecklistItem, ChecklistUpdate, Customer, DeletedProduct, MarketingExpense, Product } from '../types'
 import { normalizeIsraeliPhone } from './phone'
 
 export const STORAGE_KEY = 'import-tracker-products'
@@ -7,6 +7,7 @@ export const TRASH_KEY = 'import-tracker-deleted-products'
 export const SEEN_REMOTE_IDS_KEY = 'import-tracker-seen-remote-ids'
 export const MARKETING_KEY = 'import-tracker-marketing-expenses'
 export const CUSTOMERS_KEY = 'import-tracker-customers'
+export const CHECKLIST_KEY = 'import-tracker-checklist'
 export const AUTO_BACKUP_KEY_PREFIX = 'import-tracker-auto-backup-'
 export const AUTO_BACKUP_DAYS_KEPT = 7
 
@@ -92,6 +93,24 @@ export function normalizeCustomer(raw: Partial<Customer>): Customer {
     address: raw.address ?? '',
     notes: raw.notes ?? '',
     createdAt: raw.createdAt ?? new Date().toISOString(),
+  }
+}
+
+export function normalizeChecklistUpdate(raw: Partial<ChecklistUpdate>): ChecklistUpdate {
+  return {
+    id: raw.id ?? crypto.randomUUID(),
+    text: raw.text ?? '',
+    timestamp: raw.timestamp ?? new Date().toISOString(),
+  }
+}
+
+export function normalizeChecklistItem(raw: Partial<ChecklistItem>): ChecklistItem {
+  return {
+    id: raw.id ?? crypto.randomUUID(),
+    text: raw.text ?? '',
+    done: raw.done ?? false,
+    createdAt: raw.createdAt ?? new Date().toISOString(),
+    updates: (raw.updates ?? []).map(normalizeChecklistUpdate),
   }
 }
 
@@ -189,6 +208,25 @@ export function saveCustomers(customers: Customer[]) {
   }
 }
 
+export function loadChecklist(): ChecklistItem[] {
+  try {
+    const raw = localStorage.getItem(CHECKLIST_KEY)
+    if (!raw) return []
+    const parsed = JSON.parse(raw) as Partial<ChecklistItem>[]
+    return parsed.map(normalizeChecklistItem)
+  } catch {
+    return []
+  }
+}
+
+export function saveChecklist(checklist: ChecklistItem[]) {
+  try {
+    localStorage.setItem(CHECKLIST_KEY, JSON.stringify(checklist))
+  } catch {
+    // ignore storage failures
+  }
+}
+
 // Keeps one rotating snapshot per calendar day (last AUTO_BACKUP_DAYS_KEPT days)
 // so a bad edit or a sync mishap can be recovered from without any server round-trip.
 export function writeAutoBackupIfNeeded(
@@ -196,6 +234,7 @@ export function writeAutoBackupIfNeeded(
   deleted: DeletedProduct[],
   marketingExpenses: MarketingExpense[],
   customers: Customer[],
+  checklist: ChecklistItem[],
 ) {
   try {
     const today = new Date().toISOString().slice(0, 10)
@@ -203,7 +242,14 @@ export function writeAutoBackupIfNeeded(
     if (localStorage.getItem(todayKey)) return
     localStorage.setItem(
       todayKey,
-      JSON.stringify({ products: withoutEmptyDrafts(products), deleted, marketingExpenses, customers, savedAt: Date.now() }),
+      JSON.stringify({
+        products: withoutEmptyDrafts(products),
+        deleted,
+        marketingExpenses,
+        customers,
+        checklist,
+        savedAt: Date.now(),
+      }),
     )
     const keys = Object.keys(localStorage).filter((k) => k.startsWith(AUTO_BACKUP_KEY_PREFIX))
     keys
