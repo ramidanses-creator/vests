@@ -1,14 +1,17 @@
 import { useMemo, useState } from 'react'
-import type { Customer, DiscountType, Product, ReturnReason } from '../types'
-import { formatCurrency, saleNetRevenue } from '../utils/calculations'
+import type { Currency, Customer, DiscountType, Product, ReturnReason } from '../types'
+import { calculateProductTotals, formatCurrency, saleNetRevenue } from '../utils/calculations'
 import { normalizeIsraeliPhone } from '../utils/phone'
+import { CustomerOrderForm, type OrderLine } from './CustomerOrderForm'
 
 interface Props {
   customers: Customer[]
   products: Product[]
+  usdToIlsRate: number | null
   onAdd: (customer: Customer) => void
   onUpdate: (customer: Customer) => void
   onRemove: (id: string) => void
+  onCreateOrder: (customer: Customer, lines: OrderLine[], shippingAmount: number, shippingCurrency: Currency) => void
 }
 
 interface PurchaseRow {
@@ -39,10 +42,11 @@ function emptyDraft(): Customer {
   }
 }
 
-export function CustomersPage({ customers, products, onAdd, onUpdate, onRemove }: Props) {
+export function CustomersPage({ customers, products, usdToIlsRate, onAdd, onUpdate, onRemove, onCreateOrder }: Props) {
   const [query, setQuery] = useState('')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [editing, setEditing] = useState<Customer | null>(null)
+  const [ordering, setOrdering] = useState(false)
 
   const q = query.trim().toLowerCase()
   const filtered = useMemo(
@@ -88,6 +92,11 @@ export function CustomersPage({ customers, products, onAdd, onUpdate, onRemove }
 
   const totalSpent = purchaseHistory.reduce((sum, r) => sum + r.total, 0)
   const [expandedRow, setExpandedRow] = useState<string | null>(null)
+
+  const linkedOrders = useMemo(
+    () => (selectedCustomer ? products.filter((p) => p.linkedCustomerId === selectedCustomer.id) : []),
+    [selectedCustomer, products],
+  )
 
   function startNew() {
     setEditing(emptyDraft())
@@ -178,6 +187,20 @@ export function CustomersPage({ customers, products, onAdd, onUpdate, onRemove }
     )
   }
 
+  if (selectedCustomer && ordering) {
+    return (
+      <CustomerOrderForm
+        customerName={selectedCustomer.name}
+        usdToIlsRate={usdToIlsRate}
+        onCancel={() => setOrdering(false)}
+        onSubmit={(lines, shippingAmount, shippingCurrency) => {
+          onCreateOrder(selectedCustomer, lines, shippingAmount, shippingCurrency)
+          setOrdering(false)
+        }}
+      />
+    )
+  }
+
   if (selectedCustomer) {
     return (
       <div className="flex flex-col gap-4">
@@ -210,7 +233,32 @@ export function CustomersPage({ customers, products, onAdd, onUpdate, onRemove }
             {selectedCustomer.address && <p>📍 {selectedCustomer.address}</p>}
             {selectedCustomer.notes && <p className="text-slate-400">{selectedCustomer.notes}</p>}
           </div>
+          <button
+            onClick={() => setOrdering(true)}
+            className="mt-3 w-full rounded-lg bg-teal-600 py-2 text-sm font-semibold text-white hover:bg-teal-500"
+          >
+            + פתיחת הזמנה חדשה
+          </button>
         </div>
+
+        {linkedOrders.length > 0 && (
+          <div className="rounded-xl border border-white/10 bg-[#1a1b20] p-4">
+            <h3 className="mb-3 text-sm font-semibold text-slate-200">הזמנות שנפתחו עבור הלקוח</h3>
+            <div className="flex flex-col gap-2">
+              {linkedOrders.map((p) => {
+                const totals = calculateProductTotals(p, usdToIlsRate)
+                return (
+                  <div key={p.id} className="flex items-center justify-between rounded-lg bg-white/[0.03] px-3 py-2 text-sm">
+                    <span className="text-slate-200">{p.name || 'מוצר ללא שם'}</span>
+                    <span className="text-xs text-slate-400">
+                      הוזמן: {totals.quantityImported} · הגיע: {totals.quantityArrived}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
 
         <div className="rounded-xl border border-white/10 bg-[#1a1b20] p-4">
           <div className="mb-3 flex items-center justify-between">

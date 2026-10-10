@@ -60,6 +60,7 @@ export interface Product {
   expenses: Expense[]
   sales: Sale[]
   notes: string
+  linkedCustomerId: string | null
 }
 
 export interface DeletedProduct {

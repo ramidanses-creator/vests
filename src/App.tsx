@@ -7,6 +7,7 @@ import { ChecklistPanel } from './components/ChecklistPanel'
 import { CollapsibleSection } from './components/CollapsibleSection'
 import { CurrencyConverter } from './components/CurrencyConverter'
 import { CustomersPage } from './components/CustomersPage'
+import type { OrderLine } from './components/CustomerOrderForm'
 import { DeletedProducts } from './components/DeletedProducts'
 import { Analytics } from './components/Analytics'
 import { InventoryPage } from './components/InventoryPage'
@@ -22,8 +23,8 @@ import { useAuthUser } from './hooks/useAuthUser'
 import { useCloudSync } from './hooks/useCloudSync'
 import { useOfficialRate } from './hooks/useOfficialRate'
 import { useToast } from './hooks/useToast'
-import { PRODUCT_STATUS_LABELS, type ChecklistItem, type Customer, type MarketingExpense, type Product } from './types'
-import { countInventoryAlerts } from './utils/calculations'
+import { PRODUCT_STATUS_LABELS, type ChecklistItem, type Currency, type Customer, type MarketingExpense, type Product } from './types'
+import { amountInIls, countInventoryAlerts } from './utils/calculations'
 import { isEmptyDraft, normalizeProduct } from './utils/persistence'
 
 type View = 'active' | 'standby' | 'inventory'
@@ -203,6 +204,34 @@ function AppContent({ uid, userEmail }: AppContentProps) {
     if (target) showToast(`הלקוח "${target.name}" נמחק`, 'info')
   }
 
+  // Creates one new product per order line, splitting the combined shipping
+  // cost proportionally by each line's purchase value (falls back to an even
+  // split when no line has a price yet) — same approach as the standalone
+  // shipment-split tool, just applied at order-creation time instead of after.
+  function createOrderForCustomer(customer: Customer, lines: OrderLine[], shippingAmountIls: number, _shippingCurrency: Currency) {
+    const values = lines.map((l) => amountInIls(l.quantity * l.pricePerUnit, l.currency, officialRate))
+    const totalValue = values.reduce((sum, v) => sum + v, 0)
+    const newProducts = lines.map((line, i) => {
+      const share = totalValue > 0 ? values[i] / totalValue : lines.length > 0 ? 1 / lines.length : 0
+      const shippingShare = shippingAmountIls * share
+      const product = createDefaultProduct(officialRate)
+      return {
+        ...product,
+        name: line.name,
+        purchasePricePerUnit: line.pricePerUnit,
+        purchaseCurrency: line.currency,
+        shipments: [{ id: crypto.randomUUID(), quantity: line.quantity, arrived: false, expectedDate: '' }],
+        expenses:
+          shippingShare > 0
+            ? [{ id: crypto.randomUUID(), label: 'משלוח (חלק יחסי מההזמנה)', amount: shippingShare, currency: 'ILS' as const }]
+            : [],
+        linkedCustomerId: customer.id,
+      }
+    })
+    setProducts((prev) => [...prev, ...newProducts])
+    showToast(`ההזמנה עבור "${customer.name}" נוצרה — ${newProducts.length} מוצרים`, 'success')
+  }
+
   function addChecklistItem(text: string) {
     const item: ChecklistItem = {
       id: crypto.randomUUID(),
@@ -270,7 +299,7 @@ function AppContent({ uid, userEmail }: AppContentProps) {
   function renderViewPanel(index: number) {
     const v = VIEW_ORDER[index]
     if (v === 'inventory') {
-      return <InventoryPage products={filteredProducts} onChange={updateProduct} usdToIlsRate={officialRate} />
+      return <InventoryPage products={filteredProducts} onChange={updateProduct} usdToIlsRate={officialRate} customers={customers} />
     }
     const list = filteredProducts.filter((p) => p.status === v)
     return (
@@ -399,9 +428,11 @@ function AppContent({ uid, userEmail }: AppContentProps) {
               <CustomersPage
                 customers={customers}
                 products={products}
+                usdToIlsRate={officialRate}
                 onAdd={addCustomer}
                 onUpdate={updateCustomer}
                 onRemove={removeCustomer}
+                onCreateOrder={createOrderForCustomer}
               />
             )}
           </div>

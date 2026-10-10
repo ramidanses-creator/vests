@@ -1,12 +1,13 @@
 import { useState } from 'react'
-import type { Product } from '../types'
-import { calculateProductTotals, isProductLate } from '../utils/calculations'
+import type { Customer, Product } from '../types'
+import { calculateProductTotals, formatCurrency, isProductLate, saleNetRevenue } from '../utils/calculations'
 import { ShipmentsList } from './ShipmentsList'
 
 interface Props {
   products: Product[]
   onChange: (product: Product) => void
   usdToIlsRate: number | null
+  customers: Customer[]
 }
 
 const LOW_STOCK_THRESHOLD = 5
@@ -20,7 +21,7 @@ function nextExpectedShipment(product: Product) {
   return pending[0] ?? null
 }
 
-export function InventoryPage({ products, onChange, usdToIlsRate }: Props) {
+export function InventoryPage({ products, onChange, usdToIlsRate, customers }: Props) {
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [sortMode, setSortMode] = useState<SortMode>('default')
 
@@ -108,6 +109,11 @@ export function InventoryPage({ products, onChange, usdToIlsRate }: Props) {
                     מלאי נמוך
                   </span>
                 )}
+                {product.linkedCustomerId && (
+                  <span className="rounded-md bg-teal-500/15 px-2 py-0.5 text-[11px] text-teal-300">
+                    👤 {customers.find((c) => c.id === product.linkedCustomerId)?.name ?? 'הזמנה ללקוח'}
+                  </span>
+                )}
               </div>
             </button>
           )
@@ -126,6 +132,34 @@ export function InventoryPage({ products, onChange, usdToIlsRate }: Props) {
             shipments={expandedProduct.shipments}
             onChange={(shipments) => onChange({ ...expandedProduct, shipments })}
           />
+
+          <div className="mt-4 border-t border-white/10 pt-3">
+            <h4 className="mb-2 text-sm font-semibold text-slate-200">היסטוריית מכירות</h4>
+            {expandedProduct.sales.length === 0 ? (
+              <p className="text-xs text-slate-500">המוצר הזה עדיין לא נמכר.</p>
+            ) : (
+              <div className="flex flex-col gap-1.5">
+                {[...expandedProduct.sales]
+                  .sort((a, b) => b.date.localeCompare(a.date))
+                  .map((s) => {
+                    const customer = customers.find((c) => c.id === s.customerId)
+                    const netQty = s.quantity - s.returnedQuantity
+                    return (
+                      <div key={s.id} className="flex items-center justify-between rounded-md bg-black/20 px-2.5 py-1.5 text-xs">
+                        <div className="flex flex-col">
+                          <span className="text-slate-200">
+                            {new Date(s.date).toLocaleDateString('he-IL')} · {netQty} יח׳
+                            {s.returnedQuantity > 0 && <span className="text-rose-300"> (הוחזרו {s.returnedQuantity})</span>}
+                          </span>
+                          <span className="text-slate-500">{customer ? `👤 ${customer.name}` : 'ללא לקוח מקושר'}</span>
+                        </div>
+                        <span className="font-semibold text-slate-200">{formatCurrency(saleNetRevenue(s))}</span>
+                      </div>
+                    )
+                  })}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

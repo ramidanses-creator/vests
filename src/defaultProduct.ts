@@ -25,5 +25,6 @@ export function createDefaultProduct(usdRateOverride: number | null = null): Pro
     ],
     sales: [],
     notes: '',
+    linkedCustomerId: null,
   }
 }
