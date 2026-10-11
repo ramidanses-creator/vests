@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import type { CatalogItem, Currency } from '../types'
+import { suggestNextSku } from '../utils/sku'
 import { DecimalInput } from './DecimalInput'
 
 interface Props {
@@ -9,8 +10,8 @@ interface Props {
   onRemove: (id: string) => void
 }
 
-function emptyDraft(): CatalogItem {
-  return { id: crypto.randomUUID(), sku: '', name: '', pricePerUnit: 0, currency: 'ILS', updatedAt: new Date().toISOString() }
+function emptyDraft(suggestedSku: string): CatalogItem {
+  return { id: crypto.randomUUID(), sku: suggestedSku, name: '', pricePerUnit: 0, currency: 'ILS', updatedAt: new Date().toISOString() }
 }
 
 export function CatalogPage({ items, onAdd, onUpdate, onRemove }: Props) {
@@ -29,7 +30,7 @@ export function CatalogPage({ items, onAdd, onUpdate, onRemove }: Props) {
   const sorted = useMemo(() => [...filtered].sort((a, b) => a.sku.localeCompare(b.sku, 'he')), [filtered])
 
   function startNew() {
-    setDraft(emptyDraft())
+    setDraft(emptyDraft(suggestNextSku(items)))
     setError(null)
   }
 
@@ -82,6 +83,9 @@ export function CatalogPage({ items, onAdd, onUpdate, onRemove }: Props) {
             placeholder="לדוגמה: WST-BLK"
             className="rounded border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-100"
           />
+          {!items.some((i) => i.id === draft.id) && draft.sku && (
+            <span className="text-[10px] text-slate-500">מוצע אוטומטית לפי המק״ט האחרון שהוזן — אפשר לשנות.</span>
+          )}
         </label>
         <label className="flex flex-col gap-1 text-xs text-slate-400">
           שם המוצר *
