@@ -1,5 +1,5 @@
 import { createDefaultProduct, generateSku } from '../defaultProduct'
-import type { ChecklistItem, ChecklistUpdate, Customer, DeletedProduct, MarketingExpense, Product } from '../types'
+import type { CatalogItem, ChecklistItem, ChecklistUpdate, Customer, DeletedProduct, MarketingExpense, Product } from '../types'
 import { normalizeIsraeliPhone } from './phone'
 
 export const STORAGE_KEY = 'import-tracker-products'
@@ -8,6 +8,7 @@ export const SEEN_REMOTE_IDS_KEY = 'import-tracker-seen-remote-ids'
 export const MARKETING_KEY = 'import-tracker-marketing-expenses'
 export const CUSTOMERS_KEY = 'import-tracker-customers'
 export const CHECKLIST_KEY = 'import-tracker-checklist'
+export const CATALOG_KEY = 'import-tracker-catalog'
 export const AUTO_BACKUP_KEY_PREFIX = 'import-tracker-auto-backup-'
 export const AUTO_BACKUP_DAYS_KEPT = 7
 
@@ -111,6 +112,17 @@ export function normalizeChecklistItem(raw: Partial<ChecklistItem>): ChecklistIt
     done: raw.done ?? false,
     createdAt: raw.createdAt ?? new Date().toISOString(),
     updates: (raw.updates ?? []).map(normalizeChecklistUpdate),
+  }
+}
+
+export function normalizeCatalogItem(raw: Partial<CatalogItem>): CatalogItem {
+  return {
+    id: raw.id ?? crypto.randomUUID(),
+    sku: raw.sku ?? '',
+    name: raw.name ?? '',
+    pricePerUnit: raw.pricePerUnit ?? 0,
+    currency: raw.currency ?? 'ILS',
+    updatedAt: raw.updatedAt ?? new Date().toISOString(),
   }
 }
 
@@ -227,6 +239,25 @@ export function saveChecklist(checklist: ChecklistItem[]) {
   }
 }
 
+export function loadCatalog(): CatalogItem[] {
+  try {
+    const raw = localStorage.getItem(CATALOG_KEY)
+    if (!raw) return []
+    const parsed = JSON.parse(raw) as Partial<CatalogItem>[]
+    return parsed.map(normalizeCatalogItem)
+  } catch {
+    return []
+  }
+}
+
+export function saveCatalog(catalog: CatalogItem[]) {
+  try {
+    localStorage.setItem(CATALOG_KEY, JSON.stringify(catalog))
+  } catch {
+    // ignore storage failures
+  }
+}
+
 // Keeps one rotating snapshot per calendar day (last AUTO_BACKUP_DAYS_KEPT days)
 // so a bad edit or a sync mishap can be recovered from without any server round-trip.
 export function writeAutoBackupIfNeeded(
@@ -235,6 +266,7 @@ export function writeAutoBackupIfNeeded(
   marketingExpenses: MarketingExpense[],
   customers: Customer[],
   checklist: ChecklistItem[],
+  catalog: CatalogItem[],
 ) {
   try {
     const today = new Date().toISOString().slice(0, 10)
@@ -248,6 +280,7 @@ export function writeAutoBackupIfNeeded(
         marketingExpenses,
         customers,
         checklist,
+        catalog,
         savedAt: Date.now(),
       }),
     )

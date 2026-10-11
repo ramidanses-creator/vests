@@ -2,18 +2,21 @@ import { doc, getDoc, setDoc } from 'firebase/firestore'
 import { useEffect, useRef, useState } from 'react'
 import { db } from '../firebase'
 import { createDefaultProduct } from '../defaultProduct'
-import type { ChecklistItem, Customer, DeletedProduct, MarketingExpense, Product } from '../types'
+import type { CatalogItem, ChecklistItem, Customer, DeletedProduct, MarketingExpense, Product } from '../types'
 import {
+  loadCatalog,
   loadChecklist,
   loadCustomers,
   loadDeleted,
   loadMarketingExpenses,
   loadProducts,
   loadSeenRemoteIds,
+  normalizeCatalogItem,
   normalizeChecklistItem,
   normalizeCustomer,
   normalizeMarketingExpense,
   normalizeProduct,
+  saveCatalog,
   saveChecklist,
   saveCustomers,
   saveDeleted,
@@ -35,12 +38,13 @@ export function useCloudSync(uid: string) {
   const [marketingExpenses, setMarketingExpenses] = useState<MarketingExpense[]>(() => loadMarketingExpenses())
   const [customers, setCustomers] = useState<Customer[]>(() => loadCustomers())
   const [checklist, setChecklist] = useState<ChecklistItem[]>(() => loadChecklist())
+  const [catalog, setCatalog] = useState<CatalogItem[]>(() => loadCatalog())
   const [cloudLoaded, setCloudLoaded] = useState(false)
   const [previousLoginAt, setPreviousLoginAt] = useState<number | null>(null)
 
   useEffect(() => {
     saveProducts(products)
-    writeAutoBackupIfNeeded(products, deleted, marketingExpenses, customers, checklist)
+    writeAutoBackupIfNeeded(products, deleted, marketingExpenses, customers, checklist, catalog)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [products])
 
@@ -60,6 +64,10 @@ export function useCloudSync(uid: string) {
     saveChecklist(checklist)
   }, [checklist])
 
+  useEffect(() => {
+    saveCatalog(catalog)
+  }, [catalog])
+
   // Load this user's data from Firestore once on sign-in, record the previous
   // login time for display, then stamp this session as the new "last login".
   useEffect(() => {
@@ -75,6 +83,7 @@ export function useCloudSync(uid: string) {
           marketingExpenses?: Partial<MarketingExpense>[]
           customers?: Partial<Customer>[]
           checklist?: Partial<ChecklistItem>[]
+          catalog?: Partial<CatalogItem>[]
           lastLoginAt?: number
         }
         if (data.products) setProducts(data.products.map(normalizeProduct))
@@ -82,6 +91,7 @@ export function useCloudSync(uid: string) {
         if (data.marketingExpenses) setMarketingExpenses(data.marketingExpenses.map(normalizeMarketingExpense))
         if (data.customers) setCustomers(data.customers.map(normalizeCustomer))
         if (data.checklist) setChecklist(data.checklist.map(normalizeChecklistItem))
+        if (data.catalog) setCatalog(data.catalog.map(normalizeCatalogItem))
         setPreviousLoginAt(data.lastLoginAt ?? null)
       } else {
         setPreviousLoginAt(null)
@@ -105,7 +115,15 @@ export function useCloudSync(uid: string) {
     writeTimeoutRef.current = setTimeout(() => {
       setDoc(
         doc(db, 'users', uid),
-        { products: withoutEmptyDrafts(products), deleted, marketingExpenses, customers, checklist, updatedAt: Date.now() },
+        {
+          products: withoutEmptyDrafts(products),
+          deleted,
+          marketingExpenses,
+          customers,
+          checklist,
+          catalog,
+          updatedAt: Date.now(),
+        },
         { merge: true },
       ).catch(() => {
         // offline or blocked — localStorage still has the data
@@ -114,7 +132,7 @@ export function useCloudSync(uid: string) {
     return () => {
       if (writeTimeoutRef.current) clearTimeout(writeTimeoutRef.current)
     }
-  }, [uid, cloudLoaded, products, deleted, marketingExpenses, customers, checklist])
+  }, [uid, cloudLoaded, products, deleted, marketingExpenses, customers, checklist, catalog])
 
   // Merge in products published to the static products.json file (e.g. via an
   // external feed), skipping ones already seen so they aren't re-added after deletion.
@@ -149,6 +167,8 @@ export function useCloudSync(uid: string) {
     setCustomers,
     checklist,
     setChecklist,
+    catalog,
+    setCatalog,
     cloudLoaded,
     previousLoginAt,
   }

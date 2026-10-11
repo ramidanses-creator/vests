@@ -77,6 +77,15 @@ export interface MarketingExpense {
   recurring: boolean
 }
 
+export interface CatalogItem {
+  id: string
+  sku: string
+  name: string
+  pricePerUnit: number
+  currency: Currency
+  updatedAt: string
+}
+
 export interface ChecklistUpdate {
   id: string
   text: string

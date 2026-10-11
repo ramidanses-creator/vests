@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import type { Currency } from '../types'
+import type { CatalogItem, Currency } from '../types'
 import { amountInIls, formatCurrency } from '../utils/calculations'
+import { CatalogItemPicker } from './CatalogItemPicker'
 import { DecimalInput } from './DecimalInput'
 
 export interface OrderLine {
@@ -14,6 +15,7 @@ export interface OrderLine {
 interface Props {
   customerName: string
   usdToIlsRate: number | null
+  catalog: CatalogItem[]
   onCancel: () => void
   onSubmit: (lines: OrderLine[], shippingAmount: number, shippingCurrency: Currency) => void
 }
@@ -22,7 +24,7 @@ function emptyLine(): OrderLine {
   return { id: crypto.randomUUID(), name: '', quantity: 1, pricePerUnit: 0, currency: 'USD' }
 }
 
-export function CustomerOrderForm({ customerName, usdToIlsRate, onCancel, onSubmit }: Props) {
+export function CustomerOrderForm({ customerName, usdToIlsRate, catalog, onCancel, onSubmit }: Props) {
   const [lines, setLines] = useState<OrderLine[]>([emptyLine()])
   const [shippingAmount, setShippingAmount] = useState('')
   const [shippingCurrency, setShippingCurrency] = useState<Currency>('ILS')
@@ -69,13 +71,16 @@ export function CustomerOrderForm({ customerName, usdToIlsRate, onCancel, onSubm
         {lines.map((line, i) => (
           <div key={line.id} className="flex flex-wrap items-end gap-2 rounded-lg bg-black/20 p-2.5">
             <label className="flex min-w-[110px] flex-1 flex-col gap-1 text-xs text-slate-400">
-              מוצר {i + 1}
-              <input
-                type="text"
-                placeholder="שם המוצר (למשל: וסטים)"
+              מוצר {i + 1} (לפי שם או מק״ט מהקטלוג)
+              <CatalogItemPicker
+                catalog={catalog}
                 value={line.name}
-                onChange={(e) => updateLine(line.id, { name: e.target.value })}
-                className="rounded border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-slate-100"
+                placeholder="שם המוצר או מק״ט"
+                onChangeText={(name) => updateLine(line.id, { name })}
+                onPick={(item) =>
+                  updateLine(line.id, { name: item.name, pricePerUnit: item.pricePerUnit, currency: item.currency })
+                }
+                className="w-full rounded border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-slate-100"
               />
             </label>
             <label className="flex w-20 flex-col gap-1 text-xs text-slate-400">

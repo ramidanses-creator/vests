@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import type { Currency, Customer, DiscountType, Product, ReturnReason } from '../types'
+import type { CatalogItem, Currency, Customer, DiscountType, Product, ReturnReason } from '../types'
 import { calculateProductTotals, formatCurrency, saleNetRevenue } from '../utils/calculations'
 import { normalizeIsraeliPhone } from '../utils/phone'
 import { CustomerOrderForm, type OrderLine } from './CustomerOrderForm'
@@ -8,6 +8,7 @@ interface Props {
   customers: Customer[]
   products: Product[]
   usdToIlsRate: number | null
+  catalog: CatalogItem[]
   onAdd: (customer: Customer) => void
   onUpdate: (customer: Customer) => void
   onRemove: (id: string) => void
@@ -42,7 +43,7 @@ function emptyDraft(): Customer {
   }
 }
 
-export function CustomersPage({ customers, products, usdToIlsRate, onAdd, onUpdate, onRemove, onCreateOrder }: Props) {
+export function CustomersPage({ customers, products, usdToIlsRate, catalog, onAdd, onUpdate, onRemove, onCreateOrder }: Props) {
   const [query, setQuery] = useState('')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [editing, setEditing] = useState<Customer | null>(null)
@@ -192,6 +193,7 @@ export function CustomersPage({ customers, products, usdToIlsRate, onAdd, onUpda
       <CustomerOrderForm
         customerName={selectedCustomer.name}
         usdToIlsRate={usdToIlsRate}
+        catalog={catalog}
         onCancel={() => setOrdering(false)}
         onSubmit={(lines, shippingAmount, shippingCurrency) => {
           onCreateOrder(selectedCustomer, lines, shippingAmount, shippingCurrency)

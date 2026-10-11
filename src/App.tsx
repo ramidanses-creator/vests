@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { AuthScreen } from './components/AuthScreen'
 import { BackupTools } from './components/BackupTools'
 import { ChatEntry } from './components/ChatEntry'
+import { CatalogPage } from './components/CatalogPage'
 import { ChecklistPanel } from './components/ChecklistPanel'
 import { CollapsibleSection } from './components/CollapsibleSection'
 import { CurrencyConverter } from './components/CurrencyConverter'
@@ -23,14 +24,22 @@ import { useAuthUser } from './hooks/useAuthUser'
 import { useCloudSync } from './hooks/useCloudSync'
 import { useOfficialRate } from './hooks/useOfficialRate'
 import { useToast } from './hooks/useToast'
-import { PRODUCT_STATUS_LABELS, type ChecklistItem, type Currency, type Customer, type MarketingExpense, type Product } from './types'
+import {
+  PRODUCT_STATUS_LABELS,
+  type CatalogItem,
+  type ChecklistItem,
+  type Currency,
+  type Customer,
+  type MarketingExpense,
+  type Product,
+} from './types'
 import { amountInIls, countInventoryAlerts } from './utils/calculations'
 import { isEmptyDraft, normalizeProduct } from './utils/persistence'
 
 type View = 'active' | 'standby' | 'inventory'
 const VIEW_ORDER: View[] = ['active', 'standby', 'inventory']
 
-type UtilityId = 'inventory' | 'split' | 'sales' | 'backup' | 'currency' | 'analytics' | 'customers'
+type UtilityId = 'inventory' | 'split' | 'sales' | 'backup' | 'currency' | 'analytics' | 'customers' | 'catalog'
 const UTILITIES: { id: UtilityId; label: string; shortLabel: string; icon: string }[] = [
   { id: 'inventory', label: 'ניהול מלאי', shortLabel: 'מלאי', icon: '📦' },
   { id: 'split', label: 'פיצול משלוח/מכס', shortLabel: 'פיצול', icon: '🧮' },
@@ -39,13 +48,14 @@ const UTILITIES: { id: UtilityId; label: string; shortLabel: string; icon: strin
   { id: 'sales', label: 'מכירות והחזרות', shortLabel: 'מכירות', icon: '🧾' },
   { id: 'backup', label: 'גיבוי ושחזור', shortLabel: 'גיבוי', icon: '💾' },
   { id: 'currency', label: 'המרת מטבע', shortLabel: 'מטח', icon: '💱' },
+  { id: 'catalog', label: 'קטלוג מוצרים', shortLabel: 'קטלוג', icon: '📒' },
 ]
 // The square nav buttons show the four most-used tools, split evenly (2+2):
 // inventory, split, analytics and customers. "מלאי" jumps straight to the full
 // inventory tab instead of opening a page of its own. Sales lives in the FAB
 // menu; backup and currency conversion live in the settings dropdown — all
 // three are used less often than the four promoted to the main nav.
-const SQUARE_TOOLS = UTILITIES.filter((u) => u.id !== 'sales' && u.id !== 'backup' && u.id !== 'currency')
+const SQUARE_TOOLS = UTILITIES.filter((u) => u.id === 'inventory' || u.id === 'split' || u.id === 'analytics' || u.id === 'customers')
 
 interface FabAction {
   id: string
@@ -76,6 +86,8 @@ function AppContent({ uid, userEmail }: AppContentProps) {
     setCustomers,
     checklist,
     setChecklist,
+    catalog,
+    setCatalog,
     previousLoginAt,
   } = useCloudSync(uid)
   const [view, setView] = useState<View>('active')
@@ -205,6 +217,21 @@ function AppContent({ uid, userEmail }: AppContentProps) {
     const target = customers.find((c) => c.id === id)
     setCustomers((prev) => prev.filter((c) => c.id !== id))
     if (target) showToast(`הלקוח "${target.name}" נמחק`, 'info')
+  }
+
+  function addCatalogItem(item: CatalogItem) {
+    setCatalog((prev) => [item, ...prev])
+    showToast(`המק״ט "${item.sku}" נוסף לקטלוג`, 'success')
+  }
+
+  function updateCatalogItem(item: CatalogItem) {
+    setCatalog((prev) => prev.map((i) => (i.id === item.id ? item : i)))
+  }
+
+  function removeCatalogItem(id: string) {
+    const target = catalog.find((i) => i.id === id)
+    setCatalog((prev) => prev.filter((i) => i.id !== id))
+    if (target) showToast(`המק״ט "${target.sku}" הוסר מהקטלוג`, 'info')
   }
 
   // Creates one new product per order line, splitting the combined shipping
@@ -372,6 +399,15 @@ function AppContent({ uid, userEmail }: AppContentProps) {
                 <button
                   onClick={() => {
                     setProfileOpen(false)
+                    setActiveUtility('catalog')
+                  }}
+                  className="mb-2 w-full rounded-md border border-white/10 py-1.5 text-center text-slate-300 hover:bg-white/5"
+                >
+                  📒 קטלוג מוצרים
+                </button>
+                <button
+                  onClick={() => {
+                    setProfileOpen(false)
                     setActiveUtility('currency')
                   }}
                   className="mb-2 w-full rounded-md border border-white/10 py-1.5 text-center text-slate-300 hover:bg-white/5"
@@ -442,10 +478,19 @@ function AppContent({ uid, userEmail }: AppContentProps) {
                 customers={customers}
                 products={products}
                 usdToIlsRate={officialRate}
+                catalog={catalog}
                 onAdd={addCustomer}
                 onUpdate={updateCustomer}
                 onRemove={removeCustomer}
                 onCreateOrder={createOrderForCustomer}
+              />
+            )}
+            {activeUtility === 'catalog' && (
+              <CatalogPage
+                items={catalog}
+                onAdd={addCatalogItem}
+                onUpdate={updateCatalogItem}
+                onRemove={removeCatalogItem}
               />
             )}
           </div>
