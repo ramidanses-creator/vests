@@ -31,29 +31,32 @@ type View = 'active' | 'standby' | 'inventory'
 const VIEW_ORDER: View[] = ['active', 'standby', 'inventory']
 
 type UtilityId = 'inventory' | 'split' | 'sales' | 'backup' | 'currency' | 'analytics' | 'customers'
-const UTILITIES: { id: UtilityId; label: string; shortLabel: string }[] = [
-  { id: 'inventory', label: 'ניהול מלאי', shortLabel: 'מלאי' },
-  { id: 'split', label: 'פיצול משלוח/מכס', shortLabel: 'פיצול' },
-  { id: 'analytics', label: 'אנליטיקה כלכלית', shortLabel: 'אנליטיקה' },
-  { id: 'sales', label: 'מכירות והחזרות', shortLabel: 'מכירות' },
-  { id: 'backup', label: 'גיבוי ושחזור', shortLabel: 'גיבוי' },
-  { id: 'currency', label: 'המרת מטבע', shortLabel: 'מטח' },
-  { id: 'customers', label: 'כרטיסי לקוחות', shortLabel: 'לקוחות' },
+const UTILITIES: { id: UtilityId; label: string; shortLabel: string; icon: string }[] = [
+  { id: 'inventory', label: 'ניהול מלאי', shortLabel: 'מלאי', icon: '📦' },
+  { id: 'split', label: 'פיצול משלוח/מכס', shortLabel: 'פיצול', icon: '🧮' },
+  { id: 'analytics', label: 'אנליטיקה כלכלית', shortLabel: 'אנליטיקה', icon: '📊' },
+  { id: 'customers', label: 'כרטיסי לקוחות', shortLabel: 'לקוחות', icon: '👥' },
+  { id: 'sales', label: 'מכירות והחזרות', shortLabel: 'מכירות', icon: '🧾' },
+  { id: 'backup', label: 'גיבוי ושחזור', shortLabel: 'גיבוי', icon: '💾' },
+  { id: 'currency', label: 'המרת מטבע', shortLabel: 'מטח', icon: '💱' },
 ]
-// The square nav buttons show the general tools, split evenly (2+2). "מלאי" jumps
-// straight to the full inventory tab instead of opening a page of its own; sales,
-// backup and customers live behind the FAB menu / settings dropdown instead.
-const SQUARE_TOOLS = UTILITIES.filter((u) => u.id !== 'sales' && u.id !== 'backup' && u.id !== 'customers')
+// The square nav buttons show the four most-used tools, split evenly (2+2):
+// inventory, split, analytics and customers. "מלאי" jumps straight to the full
+// inventory tab instead of opening a page of its own. Sales lives in the FAB
+// menu; backup and currency conversion live in the settings dropdown — all
+// three are used less often than the four promoted to the main nav.
+const SQUARE_TOOLS = UTILITIES.filter((u) => u.id !== 'sales' && u.id !== 'backup' && u.id !== 'currency')
 
 interface FabAction {
   id: string
   label: string
+  icon: string
 }
 const FAB_ACTIONS: FabAction[] = [
-  { id: 'newOrder', label: 'פתיחת הזמנה' },
-  { id: 'sale', label: 'מכירה' },
-  { id: 'standby', label: 'רשומים במערכת' },
-  { id: 'arrival', label: 'קבלת משלוח' },
+  { id: 'newOrder', label: 'פתיחת הזמנה', icon: '📝' },
+  { id: 'sale', label: 'מכירה', icon: '💰' },
+  { id: 'standby', label: 'רשומים במערכת', icon: '📋' },
+  { id: 'arrival', label: 'קבלת משלוח', icon: '🚚' },
 ]
 
 interface AppContentProps {
@@ -360,11 +363,20 @@ function AppContent({ uid, userEmail }: AppContentProps) {
                 <button
                   onClick={() => {
                     setProfileOpen(false)
-                    setActiveUtility('customers')
+                    setActiveUtility('sales')
                   }}
                   className="mb-2 w-full rounded-md border border-white/10 py-1.5 text-center text-slate-300 hover:bg-white/5"
                 >
-                  כרטיסי לקוחות
+                  🧾 מכירות והחזרות
+                </button>
+                <button
+                  onClick={() => {
+                    setProfileOpen(false)
+                    setActiveUtility('currency')
+                  }}
+                  className="mb-2 w-full rounded-md border border-white/10 py-1.5 text-center text-slate-300 hover:bg-white/5"
+                >
+                  💱 המרת מטבע
                 </button>
                 <button
                   onClick={() => {
@@ -373,7 +385,7 @@ function AppContent({ uid, userEmail }: AppContentProps) {
                   }}
                   className="mb-2 w-full rounded-md border border-white/10 py-1.5 text-center text-slate-300 hover:bg-white/5"
                 >
-                  גיבוי ושחזור
+                  💾 גיבוי ושחזור
                 </button>
                 <button
                   onClick={() => signOut(auth)}
@@ -397,6 +409,7 @@ function AppContent({ uid, userEmail }: AppContentProps) {
               ← חזרה
             </button>
             <h2 className="text-lg font-semibold text-slate-100">
+              {UTILITIES.find((u) => u.id === activeUtility)?.icon}{' '}
               {UTILITIES.find((u) => u.id === activeUtility)?.label}
             </h2>
             {activeUtility === 'split' && (
@@ -517,7 +530,10 @@ function AppContent({ uid, userEmail }: AppContentProps) {
                     {alertCount}
                   </span>
                 )}
-                {tool.shortLabel}
+                <span className="flex flex-col items-center gap-0.5">
+                  <span className="text-base leading-none">{tool.icon}</span>
+                  <span className="text-[11px] leading-none">{tool.shortLabel}</span>
+                </span>
               </button>
             ))}
           </div>
@@ -535,7 +551,10 @@ function AppContent({ uid, userEmail }: AppContentProps) {
                     : 'border-white/10 bg-white/[0.02] text-slate-300 hover:bg-white/5'
                 }`}
               >
-                {tool.shortLabel}
+                <span className="flex flex-col items-center gap-0.5">
+                  <span className="text-base leading-none">{tool.icon}</span>
+                  <span className="text-[11px] leading-none">{tool.shortLabel}</span>
+                </span>
               </button>
             ))}
           </div>
@@ -560,9 +579,10 @@ function AppContent({ uid, userEmail }: AppContentProps) {
                         animation: `fan-out 320ms cubic-bezier(0.34, 1.56, 0.64, 1) ${i * 35}ms both`,
                       } as CSSProperties
                     }
-                    className="pointer-events-auto absolute left-0 top-0 flex h-[80px] w-[80px] items-center justify-center rounded-full border-[3px] border-teal-300 bg-[#0d1418] p-1.5 text-center text-xs font-bold leading-tight text-white shadow-[0_0_0_4px_rgba(13,20,24,0.9),0_6px_24px_rgba(0,0,0,0.7)] hover:bg-[#132025]"
+                    className="pointer-events-auto absolute left-0 top-0 flex h-[80px] w-[80px] flex-col items-center justify-center gap-0.5 rounded-full border-[3px] border-teal-300 bg-[#0d1418] p-1.5 text-center text-xs font-bold leading-tight text-white shadow-[0_0_0_4px_rgba(13,20,24,0.9),0_6px_24px_rgba(0,0,0,0.7)] hover:bg-[#132025]"
                   >
-                    {action.label}
+                    <span className="text-lg leading-none">{action.icon}</span>
+                    <span>{action.label}</span>
                   </button>
                 )
               })}

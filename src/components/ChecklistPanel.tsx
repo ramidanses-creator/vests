@@ -133,6 +133,7 @@ function ChecklistRow({
 
 export function ChecklistPanel({ items, onAdd, onToggleDone, onDelete, onEditText, onAddUpdate }: Props) {
   const [newText, setNewText] = useState('')
+  const [listOpen, setListOpen] = useState(items.length === 0)
 
   function submitNew() {
     const trimmed = newText.trim()
@@ -145,14 +146,17 @@ export function ChecklistPanel({ items, onAdd, onToggleDone, onDelete, onEditTex
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">רשימת משימות</h2>
-        {items.length > 0 && (
-          <span className="text-xs font-medium text-slate-400">
-            {doneCount} / {items.length} הושלמו
-          </span>
-        )}
-      </div>
+      <button onClick={() => setListOpen((v) => !v)} className="flex w-full items-center justify-between text-right">
+        <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">📋 רשימת משימות</h2>
+        <span className="flex items-center gap-2">
+          {items.length > 0 && (
+            <span className="text-xs font-medium text-slate-400">
+              {doneCount} / {items.length} הושלמו
+            </span>
+          )}
+          {items.length > 0 && <span className="text-slate-500">{listOpen ? '︿' : '﹀'}</span>}
+        </span>
+      </button>
 
       <div className="flex gap-2">
         <input
@@ -176,8 +180,8 @@ export function ChecklistPanel({ items, onAdd, onToggleDone, onDelete, onEditTex
         <p className="rounded-xl border border-dashed border-white/15 bg-white/[0.03] p-4 text-center text-sm text-slate-400">
           אין עדיין משימות. הוסיפו את הראשונה למעלה.
         </p>
-      ) : (
-        <div className="flex flex-col gap-2">
+      ) : listOpen ? (
+        <div className="animate-[grow_150ms_ease-out] flex flex-col gap-2 origin-top">
           {items.map((item) => (
             <ChecklistRow
               key={item.id}
@@ -189,7 +193,7 @@ export function ChecklistPanel({ items, onAdd, onToggleDone, onDelete, onEditTex
             />
           ))}
         </div>
-      )}
+      ) : null}
     </div>
   )
 }
