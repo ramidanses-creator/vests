@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import type { Product } from '../types'
+import type { CatalogItem, Product } from '../types'
 import { calculateProductTotals, formatCurrency } from '../utils/calculations'
+import { CatalogLinkPicker } from './CatalogLinkPicker'
 import { DecimalInput } from './DecimalInput'
 import { ExpensesList } from './ExpensesList'
 import { ShipmentsList } from './ShipmentsList'
@@ -12,6 +13,7 @@ interface Props {
   usdToIlsRate: number | null
   categoryOptions: string[]
   expenseLabelOptions: string[]
+  catalog: CatalogItem[]
   defaultExpanded?: boolean
 }
 
@@ -22,6 +24,7 @@ export function ProductCard({
   usdToIlsRate,
   categoryOptions,
   expenseLabelOptions,
+  catalog,
   defaultExpanded,
 }: Props) {
   const [expanded, setExpanded] = useState(defaultExpanded ?? false)
@@ -48,6 +51,11 @@ export function ProductCard({
         </div>
         <div className="flex flex-wrap items-center gap-1.5 text-xs">
           <span className="rounded-md bg-white/5 px-2 py-0.5 font-mono text-slate-400">{product.sku}</span>
+          {product.catalogItemId && (
+            <span className="rounded-md bg-amber-400/15 px-2 py-0.5 font-mono text-amber-300">
+              🏷️ {catalog.find((c) => c.id === product.catalogItemId)?.sku ?? 'מק״ט'}
+            </span>
+          )}
           {product.category && (
             <span className="rounded-md bg-white/10 px-2 py-0.5 text-slate-200">{product.category}</span>
           )}
@@ -89,6 +97,14 @@ export function ProductCard({
                 className="w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 focus:border-teal-500 focus:outline-none sm:w-40"
               />
             </div>
+            <label className="flex flex-col gap-1 text-xs text-slate-400">
+              שיוך למק״ט בקטלוג (לא משנה מחיר/כמות)
+              <CatalogLinkPicker
+                catalog={catalog}
+                selectedId={product.catalogItemId}
+                onSelect={(catalogItemId) => onChange({ ...product, catalogItemId })}
+              />
+            </label>
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={toggleStatus}

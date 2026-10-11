@@ -329,7 +329,15 @@ function AppContent({ uid, userEmail }: AppContentProps) {
   function renderViewPanel(index: number) {
     const v = VIEW_ORDER[index]
     if (v === 'inventory') {
-      return <InventoryPage products={filteredProducts} onChange={updateProduct} usdToIlsRate={officialRate} customers={customers} />
+      return (
+        <InventoryPage
+          products={filteredProducts}
+          onChange={updateProduct}
+          usdToIlsRate={officialRate}
+          customers={customers}
+          catalog={catalog}
+        />
+      )
     }
     const list = filteredProducts.filter((p) => p.status === v)
     return (
@@ -352,6 +360,7 @@ function AppContent({ uid, userEmail }: AppContentProps) {
             usdToIlsRate={officialRate}
             categoryOptions={categoryOptions}
             expenseLabelOptions={expenseLabelOptions}
+            catalog={catalog}
             defaultExpanded={product.id === lastAddedId}
           />
         ))}

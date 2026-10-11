@@ -61,6 +61,7 @@ export interface Product {
   sales: Sale[]
   notes: string
   linkedCustomerId: string | null
+  catalogItemId: string | null
 }
 
 export interface DeletedProduct {

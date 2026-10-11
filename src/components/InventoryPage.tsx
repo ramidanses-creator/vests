@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import type { Customer, Product } from '../types'
+import type { CatalogItem, Customer, Product } from '../types'
 import { calculateProductTotals, formatCurrency, isProductLate, saleNetRevenue } from '../utils/calculations'
+import { CatalogLinkPicker } from './CatalogLinkPicker'
 import { ShipmentsList } from './ShipmentsList'
 
 interface Props {
@@ -8,6 +9,7 @@ interface Props {
   onChange: (product: Product) => void
   usdToIlsRate: number | null
   customers: Customer[]
+  catalog: CatalogItem[]
 }
 
 const LOW_STOCK_THRESHOLD = 5
@@ -21,7 +23,7 @@ function nextExpectedShipment(product: Product) {
   return pending[0] ?? null
 }
 
-export function InventoryPage({ products, onChange, usdToIlsRate, customers }: Props) {
+export function InventoryPage({ products, onChange, usdToIlsRate, customers, catalog }: Props) {
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [sortMode, setSortMode] = useState<SortMode>('default')
 
@@ -114,6 +116,11 @@ export function InventoryPage({ products, onChange, usdToIlsRate, customers }: P
                     👤 {customers.find((c) => c.id === product.linkedCustomerId)?.name ?? 'הזמנה ללקוח'}
                   </span>
                 )}
+                {product.catalogItemId && (
+                  <span className="rounded-md bg-amber-400/15 px-2 py-0.5 text-[11px] text-amber-300">
+                    🏷️ {catalog.find((c) => c.id === product.catalogItemId)?.sku ?? 'מק״ט'}
+                  </span>
+                )}
               </div>
             </button>
           )
@@ -128,6 +135,15 @@ export function InventoryPage({ products, onChange, usdToIlsRate, customers }: P
               סגור
             </button>
           </div>
+          <label className="mb-3 flex flex-col gap-1 text-xs text-slate-400">
+            שיוך למק״ט בקטלוג
+            <CatalogLinkPicker
+              catalog={catalog}
+              selectedId={expandedProduct.catalogItemId}
+              onSelect={(catalogItemId) => onChange({ ...expandedProduct, catalogItemId })}
+            />
+          </label>
+
           <ShipmentsList
             shipments={expandedProduct.shipments}
             onChange={(shipments) => onChange({ ...expandedProduct, shipments })}
