@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { User } from 'firebase/auth'
 import { useCloudSync, type SyncState } from './cloud'
-import type { AppData, Business, Customer, Doc, Expense } from './types'
+import type { AppData, Business, Customer, Doc, Expense, ListKey } from './types'
 import { DOC_META, computeTotals, nextDocNumber } from './utils/docs'
 import { todayISO, uid } from './utils/format'
 
@@ -22,24 +22,34 @@ export const DEFAULT_BUSINESS: Business = {
   accountantEmail: '',
   footerNote: '',
   startNumbers: {},
+  vatPeriod: 'bimonthly',
+  incomeTaxAdvanceRate: 0,
+}
+
+const EMPTY: AppData = { business: DEFAULT_BUSINESS, customers: [], docs: [], expenses: [], items: [], suppliers: [], expenseTypes: [] }
+
+export function normalizeData(d: Partial<AppData>): AppData {
+  return {
+    business: { ...DEFAULT_BUSINESS, ...d.business },
+    customers: d.customers ?? [],
+    docs: d.docs ?? [],
+    expenses: d.expenses ?? [],
+    items: d.items ?? [],
+    suppliers: d.suppliers ?? [],
+    expenseTypes: d.expenseTypes ?? [],
+  }
 }
 
 function load(userId: string): AppData {
   try {
     const raw = localStorage.getItem(keyFor(userId)) ?? localStorage.getItem(LEGACY_KEY)
     if (raw) {
-      const parsed = JSON.parse(raw) as Partial<AppData>
-      return {
-        business: { ...DEFAULT_BUSINESS, ...parsed.business },
-        customers: parsed.customers ?? [],
-        docs: parsed.docs ?? [],
-        expenses: parsed.expenses ?? [],
-      }
+      return normalizeData(JSON.parse(raw) as Partial<AppData>)
     }
   } catch {
     // fall through to empty data
   }
-  return { business: DEFAULT_BUSINESS, customers: [], docs: [], expenses: [] }
+  return EMPTY
 }
 
 interface Store {
@@ -55,6 +65,9 @@ interface Store {
   setDocClosed: (id: string, closed: boolean) => void
   upsertExpense: (e: Expense) => void
   deleteExpense: (id: string) => void
+  /** Add or replace a record in one of the simple lists (items, suppliers, expense types…). */
+  upsert: <K extends ListKey>(list: K, item: AppData[K][number]) => void
+  remove: (list: ListKey, id: string) => void
   replaceAll: (d: AppData) => void
 }
 
@@ -144,7 +157,14 @@ export function StoreProvider({ user, children, loading }: { user: User; childre
           expenses: p.expenses.some((x) => x.id === e.id) ? p.expenses.map((x) => (x.id === e.id ? e : x)) : [...p.expenses, e],
         })),
       deleteExpense: (id) => setData((p) => ({ ...p, expenses: p.expenses.filter((e) => e.id !== id) })),
-      replaceAll: (d) => setData(() => ({ ...d, business: { ...DEFAULT_BUSINESS, ...d.business } })),
+      upsert: (list, item) =>
+        setData((p) => {
+          const arr = p[list] as { id: string }[]
+          const next = arr.some((x) => x.id === item.id) ? arr.map((x) => (x.id === item.id ? item : x)) : [...arr, item]
+          return { ...p, [list]: next }
+        }),
+      remove: (list, id) => setData((p) => ({ ...p, [list]: (p[list] as { id: string }[]).filter((x) => x.id !== id) })),
+      replaceAll: (d) => setData(() => normalizeData(d)),
     }),
     [data, user, sync, issueDoc, setData],
   )

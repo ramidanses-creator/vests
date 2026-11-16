@@ -72,12 +72,8 @@ export function Reports({ month }: { month?: string }) {
 
   return (
     <div className="pb-36">
-      <header className="px-5 pt-[max(env(safe-area-inset-top),20px)]">
-        <h1 className="text-3xl font-semibold">דוחות</h1>
-        <p className="mt-1 text-ink-soft">להעביר ברגע דוחות לרו״ח, בכל זמן ומכל מקום</p>
-      </header>
       <div className="mt-4 space-y-4 px-5">
-        <PeriodPicker period={period} onChange={(p) => replace(`/reports?m=${p}`)} />
+        <PeriodPicker period={period} onChange={(p) => replace(`/ops?tab=reports&m=${p}`)} />
 
         <h2 className="pt-2 text-xl font-bold">דוחות חשבונאיים</h2>
         {cards.map((c) => (

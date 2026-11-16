@@ -76,18 +76,17 @@ export function Customers({ autoAdd }: { autoAdd: boolean }) {
   }, [data.customers, data.docs, q])
 
   return (
-    <div className="pb-36">
-      <header className="flex items-end justify-between px-5 pt-[max(env(safe-area-inset-top),20px)]">
-        <h1 className="text-3xl font-semibold">לקוחות</h1>
-        <Button variant="lime" onClick={() => setAdding(true)} className="!py-2.5">
-          <Icon name="plus" size={18} /> לקוח חדש
+    <div>
+      <div className="mx-4 mt-4 flex gap-2">
+        <div className="relative flex-1">
+          <Icon name="search" size={20} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-ink-soft" />
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="חיפוש לקוח" className={`${inputCls} pr-11`} />
+        </div>
+        <Button variant="lime" onClick={() => setAdding(true)} className="shrink-0 !py-2.5">
+          <Icon name="plus" size={18} /> לקוח
         </Button>
-      </header>
-      <div className="relative mx-5 mt-4">
-        <Icon name="search" size={20} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-ink-soft" />
-        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="חיפוש לקוח" className={`${inputCls} pr-11`} />
       </div>
-      <div className="mx-5 mt-4">
+      <div className="mx-4 mt-4">
         {rows.length === 0 ? (
           <EmptyState icon="users" title={q ? 'לא נמצאו לקוחות' : 'עוד אין לקוחות'} text="לקוחות נשמרים גם אוטומטית כשמפיקים להם מסמך." />
         ) : (
@@ -109,7 +108,7 @@ export function Customers({ autoAdd }: { autoAdd: boolean }) {
         open={adding}
         onClose={() => {
           setAdding(false)
-          if (autoAdd) replace('/customers')
+          if (autoAdd) replace('/income?tab=customers')
         }}
       />
     </div>
@@ -193,7 +192,7 @@ export function CustomerPage({ id, onNewDoc }: { id?: string; onNewDoc: () => vo
             onClick={() => {
               if (confirm(`למחוק את ${c.name}?`)) {
                 deleteCustomer(c.id)
-                back('/customers')
+                back('/income?tab=customers')
               }
             }}
           >

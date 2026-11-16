@@ -2,7 +2,7 @@ import { PrintableDoc } from '../components/PrintableDoc'
 import { DocRow } from '../components/DocRow'
 import { ShareBar } from '../components/ShareBar'
 import { Card, Icon, TopBar } from '../components/ui'
-import { go, useRoute } from '../router'
+import { back, go, useRoute } from '../router'
 import { useStore } from '../store'
 import type { DocType } from '../types'
 import { DOC_META, computeTotals, depositDocType, depositStatus, docTitle, isOpen } from '../utils/docs'
@@ -55,7 +55,7 @@ export function DocumentView({ id }: { id?: string }) {
 
   return (
     <div className="print-wrap min-h-dvh pb-16">
-      <TopBar title={title} onBack={() => go('/docs')} />
+      <TopBar title={title} onBack={() => back('/income')} />
 
       {query.get('fresh') === '1' && (
         <div className="no-print animate-pop mx-4 mb-3 flex items-center gap-3 rounded-2xl bg-lime p-4">

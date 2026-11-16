@@ -13,7 +13,7 @@ import {
 } from 'firebase/firestore'
 import { useEffect, useRef, useState } from 'react'
 import { db } from './firebase'
-import type { AppData, Business, Customer, Doc, Expense } from './types'
+import type { AppData, Business, Expense } from './types'
 import { getFile, putFile } from './utils/fileStore'
 
 export type SyncStatus = 'loading' | 'synced' | 'saving' | 'offline' | 'error'
@@ -24,14 +24,25 @@ export interface SyncState {
   lastSyncedAt?: number
 }
 
-type Kind = 'business' | 'customer' | 'doc' | 'expense'
+// Each list in the app data syncs as one Firestore document per record, keyed `<prefix><id>`.
+const LISTS = {
+  customer: { prefix: 'c_', list: 'customers' },
+  doc: { prefix: 'd_', list: 'docs' },
+  expense: { prefix: 'e_', list: 'expenses' },
+  item: { prefix: 'i_', list: 'items' },
+  supplier: { prefix: 's_', list: 'suppliers' },
+  expenseType: { prefix: 't_', list: 'expenseTypes' },
+} as const
+
+type ListKind = keyof typeof LISTS
+type Kind = 'business' | ListKind
 
 interface Entity {
   kind: Kind
   data: DocumentData
 }
 
-const PREFIX: Record<Exclude<Kind, 'business'>, string> = { customer: 'c_', doc: 'd_', expense: 'e_' }
+const PREFIX = { expense: LISTS.expense.prefix }
 
 let currentUid: string | null = null
 
@@ -53,25 +64,24 @@ export function stableStringify(v: unknown): string {
 export function toEntities(data: AppData): Map<string, Entity> {
   const m = new Map<string, Entity>()
   if (data.business.name) m.set('business', { kind: 'business', data: data.business })
-  for (const c of data.customers) m.set(PREFIX.customer + c.id, { kind: 'customer', data: c })
-  for (const d of data.docs) m.set(PREFIX.doc + d.id, { kind: 'doc', data: d })
-  for (const e of data.expenses) m.set(PREFIX.expense + e.id, { kind: 'expense', data: e })
+  for (const kind of Object.keys(LISTS) as ListKind[]) {
+    const { prefix, list } = LISTS[kind]
+    for (const x of (data[list] ?? []) as { id: string }[]) m.set(prefix + x.id, { kind, data: x })
+  }
   return m
 }
 
 /** Puts one remote entity into the app data (or removes it when `entity` is null). */
 export function applyEntity(data: AppData, key: string, entity: Entity | null): AppData {
   if (key === 'business') return entity ? { ...data, business: { ...data.business, ...(entity.data as Business) } } : data
-  const upsert = <T extends { id: string }>(list: T[], item: T | null, id: string) => {
-    const rest = list.filter((x) => x.id !== id)
-    if (!item) return rest
-    return list.some((x) => x.id === id) ? list.map((x) => (x.id === id ? item : x)) : [...list, item]
-  }
-  const id = key.slice(2)
-  if (key.startsWith(PREFIX.customer)) return { ...data, customers: upsert(data.customers, (entity?.data as Customer) ?? null, id) }
-  if (key.startsWith(PREFIX.doc)) return { ...data, docs: upsert(data.docs, (entity?.data as Doc) ?? null, id) }
-  if (key.startsWith(PREFIX.expense)) return { ...data, expenses: upsert(data.expenses, (entity?.data as Expense) ?? null, id) }
-  return data
+  const kind = (Object.keys(LISTS) as ListKind[]).find((k) => key.startsWith(LISTS[k].prefix))
+  if (!kind) return data
+  const { prefix, list } = LISTS[kind]
+  const id = key.slice(prefix.length)
+  const arr = ((data[list] ?? []) as { id: string }[]).filter((x) => x.id !== id || entity)
+  const item = entity?.data as { id: string } | undefined
+  const next = !item ? arr : arr.some((x) => x.id === id) ? arr.map((x) => (x.id === id ? item : x)) : [...arr, item]
+  return { ...data, [list]: next }
 }
 
 /**

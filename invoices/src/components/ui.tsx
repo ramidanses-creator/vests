@@ -134,6 +134,13 @@ const PATHS: Record<string, ReactNode> = {
   upload: <path d="M12 16V5m0 0L7.5 9.5M12 5l4.5 4.5M5 19.5h14" />,
   'chevron-down': <path d="m7 10 5 5 5-5" />,
   bolt: <path d="M13 3 6 13.5h5L10.5 21 18 10.5h-5z" />,
+  sliders: (
+    <>
+      <path d="M4 7h9M17 7h3M4 17h3M11 17h9" />
+      <circle cx="15" cy="7" r="2.2" />
+      <circle cx="9" cy="17" r="2.2" />
+    </>
+  ),
   logo: (
     <>
       <path d="M6.5 3.5h7.5l5 5v10.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 5 19V5a1.5 1.5 0 0 1 1.5-1.5z" fill="currentColor" stroke="none" />
@@ -303,7 +310,7 @@ export function Segmented<T extends string>({
           role="tab"
           aria-selected={value === o.value}
           onClick={() => onChange(o.value)}
-          className={`rounded-lg py-2.5 text-sm font-medium transition ${fill ? 'flex-1 px-1.5' : 'shrink-0 px-4'} ${
+          className={`whitespace-nowrap rounded-lg py-2.5 text-sm font-medium transition ${fill ? 'flex-1 px-1' : 'shrink-0 px-4'} ${
             value === o.value ? 'bg-ink text-white' : 'bg-mist text-ink hover:bg-line'
           }`}
         >
@@ -380,5 +387,38 @@ export function Toggle({ checked, onChange, label }: { checked: boolean; onChang
         <span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-all ${checked ? 'right-6' : 'right-1'}`} />
       </span>
     </button>
+  )
+}
+
+/** Section tabs with an underline, as at the top of הכנסות / שוטף / הוצאות. */
+export function UnderlineTabs<T extends string>({
+  value,
+  onChange,
+  options,
+  accent,
+}: {
+  value: T
+  onChange: (v: T) => void
+  options: { value: T; label: string }[]
+  accent: string
+}) {
+  return (
+    <div className="no-scrollbar flex gap-1 overflow-x-auto border-b border-line px-3" role="tablist">
+      {options.map((o) => {
+        const active = o.value === value
+        return (
+          <button
+            key={o.value}
+            role="tab"
+            aria-selected={active}
+            onClick={() => onChange(o.value)}
+            className={`relative shrink-0 px-3 pb-3 pt-2 text-base transition ${active ? 'font-semibold text-ink' : 'text-ink-soft'}`}
+          >
+            {o.label}
+            {active && <span className={`absolute inset-x-2 -bottom-px h-[3px] rounded-full ${accent}`} />}
+          </button>
+        )
+      })}
+    </div>
   )
 }

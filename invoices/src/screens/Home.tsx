@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react'
 import { DocRow } from '../components/DocRow'
-import { ActionTile, Card, Icon, Logo, Segmented, Sheet } from '../components/ui'
+import { ActionTile, Card, Icon, Segmented, Sheet } from '../components/ui'
 import { go } from '../router'
 import { useStore } from '../store'
 import { computeTotals, expenseNet, incomeOf, inRange, isOpen, receivedOf } from '../utils/docs'
-import { greeting, ils, initials, localISO, todayISO } from '../utils/format'
+import { greeting, ils, localISO, todayISO } from '../utils/format'
 
 type Period = 'week' | 'month' | 'year'
 
@@ -17,7 +17,7 @@ function periodStart(p: Period): string {
 }
 
 export function Home() {
-  const { data, sync } = useStore()
+  const { data } = useStore()
   const { business, docs, expenses } = data
   const [period, setPeriod] = useState<Period>('week')
   const [moreOpen, setMoreOpen] = useState(false)
@@ -54,43 +54,27 @@ export function Home() {
 
   return (
     <div className="pb-32">
-      <header className="flex items-center justify-between px-5 pt-[max(env(safe-area-inset-top),20px)]">
-        <Logo size={44} />
-        <button
-          onClick={() => go('/settings')}
-          className="relative grid h-12 w-12 place-items-center rounded-full bg-violet text-lg font-semibold text-white"
-          aria-label="הגדרות העסק וגיבוי"
-        >
-          <span
-            className={`absolute -bottom-0.5 -left-0.5 h-4 w-4 rounded-full border-2 border-mist ${
-              sync.status === 'synced' ? 'bg-mint' : sync.status === 'saving' || sync.status === 'loading' ? 'bg-violet' : 'bg-orange'
-            }`}
-            title={sync.status === 'synced' ? 'מגובה בענן' : sync.status === 'error' ? 'הגיבוי לענן לא פעיל' : 'מסנכרן…'}
-          />
-          {business.logo ? <img src={business.logo} alt="" className="h-12 w-12 rounded-full object-cover" /> : initials(business.ownerName || business.name)}
-        </button>
-      </header>
 
-      <h1 className="px-5 pt-6 text-3xl font-semibold text-ink">
+      <h1 className="px-5 pt-4 text-3xl font-semibold text-ink">
         {greeting()} {business.ownerName.split(' ')[0]}
       </h1>
 
       <div className="no-scrollbar mt-6 flex snap-x gap-3 overflow-x-auto px-5 pb-2">
-        <button onClick={() => go('/docs?tab=open')} className="flex min-h-40 w-[72%] max-w-72 shrink-0 snap-start flex-col justify-between rounded-3xl bg-lime p-5 text-right">
+        <button onClick={() => go('/income?tab=open')} className="flex min-h-40 w-[72%] max-w-72 shrink-0 snap-start flex-col justify-between rounded-3xl bg-lime p-5 text-right">
           <Icon name="doc" size={30} />
           <span>
             <span className="block text-4xl font-semibold tracking-tight">{ils(stats.openSum)}</span>
             <span className="mt-1 block text-lg">חיובים פתוחים ({stats.openCount})</span>
           </span>
         </button>
-        <button onClick={() => go('/reports')} className="flex min-h-40 w-[60%] max-w-64 shrink-0 snap-start flex-col justify-between rounded-3xl bg-lavender p-5 text-right">
+        <button onClick={() => go('/income?tab=receipts')} className="flex min-h-40 w-[60%] max-w-64 shrink-0 snap-start flex-col justify-between rounded-3xl bg-lavender p-5 text-right">
           <Icon name="coins" size={30} />
           <span>
             <span className="block text-4xl font-semibold tracking-tight">{ils(stats.receivedMonth)}</span>
             <span className="mt-1 block text-lg">תקבולים החודש ({stats.receiptsMonth})</span>
           </span>
         </button>
-        <button onClick={() => go('/docs?tab=drafts')} className="flex min-h-40 w-[48%] max-w-56 shrink-0 snap-start flex-col justify-between rounded-3xl bg-sky p-5 text-right">
+        <button onClick={() => go('/ops?tab=drafts')} className="flex min-h-40 w-[48%] max-w-56 shrink-0 snap-start flex-col justify-between rounded-3xl bg-sky p-5 text-right">
           <Icon name="edit" size={30} />
           <span>
             <span className="block text-4xl font-semibold tracking-tight">{stats.drafts}</span>
@@ -100,7 +84,7 @@ export function Home() {
       </div>
 
       <div className="mt-6 grid grid-cols-4 gap-2 px-5">
-        <ActionTile icon="user" label="הוספת לקוח" tone="bg-sky" onClick={() => go('/customers?add=1')} />
+        <ActionTile icon="user" label="הוספת לקוח" tone="bg-sky" onClick={() => go('/income?tab=customers&add=1')} />
         <ActionTile icon="wallet" label="העלאת הוצאה" tone="bg-peach" onClick={() => go('/expenses?add=1')} />
         <ActionTile icon="doc" label="דוח הכנסות" tone="bg-lavender" onClick={() => go('/report/income')} />
         <ActionTile icon="dots" label="פעולות נוספות" tone="bg-slate-tile text-white" onClick={() => setMoreOpen(true)} />
@@ -149,7 +133,7 @@ export function Home() {
         <div className="mb-2 flex items-center justify-between">
           <h2 className="text-xl font-bold">מסמכים אחרונים</h2>
           {recent.length > 0 && (
-            <button onClick={() => go('/docs')} className="text-sm font-medium text-indigo">
+            <button onClick={() => go('/income')} className="text-sm font-medium text-indigo">
               לכל המסמכים
             </button>
           )}
@@ -166,7 +150,7 @@ export function Home() {
           <ActionTile icon="doc" label="הצעת מחיר" tone="bg-mist" onClick={() => go('/new/quote')} />
           <ActionTile icon="receipt" label="חשבון עסקה" tone="bg-sky" onClick={() => go('/new/deal_invoice')} />
           <ActionTile icon="chart" label="דוח הוצאות" tone="bg-peach" onClick={() => go('/report/expenses')} />
-          <ActionTile icon="users" label="לקוחות" tone="bg-lavender" onClick={() => go('/customers')} />
+          <ActionTile icon="users" label="לקוחות" tone="bg-lavender" onClick={() => go('/income?tab=customers')} />
           <ActionTile icon="settings" label="פרטי העסק" tone="bg-lime" onClick={() => go('/settings')} />
           <ActionTile icon="download" label="גיבוי נתונים" tone="bg-slate-tile text-white" onClick={() => go('/settings?section=backup')} />
         </div>

@@ -4,7 +4,7 @@ import type { SyncState } from '../cloud'
 import { auth } from '../firebase'
 import { Button, Card, Field, Icon, Logo, NumberInput, Radio, TopBar, inputCls } from '../components/ui'
 import { back, useRoute } from '../router'
-import { useStore } from '../store'
+import { normalizeData, useStore } from '../store'
 import type { AppData, Business, BusinessType } from '../types'
 import { BUSINESS_TYPE_LABELS, DOC_META, allowedDocTypes } from '../utils/docs'
 import { compressImage, readAsDataUrl } from '../utils/fileStore'
@@ -58,7 +58,7 @@ export function Settings({ onboarding = false }: { onboarding?: boolean }) {
         const parsed = JSON.parse(t) as AppData
         if (!parsed.business || !Array.isArray(parsed.docs)) throw new Error('bad')
         if (confirm(`לייבא ${parsed.docs.length} מסמכים? הנתונים הקיימים יוחלפו.`)) {
-          replaceAll({ business: parsed.business, docs: parsed.docs, customers: parsed.customers ?? [], expenses: parsed.expenses ?? [] })
+          replaceAll(normalizeData(parsed))
           setB({ ...b, ...parsed.business })
         }
       })
