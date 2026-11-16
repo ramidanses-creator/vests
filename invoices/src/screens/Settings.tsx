@@ -1,5 +1,8 @@
+import { signOut } from 'firebase/auth'
 import { useEffect, useRef, useState } from 'react'
-import { Button, Card, Field, Logo, NumberInput, Radio, TopBar, inputCls } from '../components/ui'
+import type { SyncState } from '../cloud'
+import { auth } from '../firebase'
+import { Button, Card, Field, Icon, Logo, NumberInput, Radio, TopBar, inputCls } from '../components/ui'
 import { back, useRoute } from '../router'
 import { useStore } from '../store'
 import type { AppData, Business, BusinessType } from '../types'
@@ -7,7 +10,7 @@ import { BUSINESS_TYPE_LABELS, DOC_META, allowedDocTypes } from '../utils/docs'
 import { compressImage, readAsDataUrl } from '../utils/fileStore'
 
 export function Settings({ onboarding = false }: { onboarding?: boolean }) {
-  const { data, setBusiness, replaceAll } = useStore()
+  const { data, setBusiness, replaceAll, user, sync } = useStore()
   const { query } = useRoute()
   const [b, setB] = useState<Business>(data.business)
   const [error, setError] = useState('')
@@ -73,6 +76,12 @@ export function Settings({ onboarding = false }: { onboarding?: boolean }) {
           </div>
           <h1 className="mt-4 text-4xl font-extrabold leading-tight text-[#1d4d2b]">ברוכים הבאים לפנקס</h1>
           <p className="mx-auto mt-3 max-w-xs text-lg text-ink">קבלות, חשבוניות והוצאות — מכל מקום. נתחיל בפרטי העסק שיופיעו על המסמכים.</p>
+          <p className="mt-3 text-sm text-ink-soft">
+            מחובר/ת כ־<span dir="ltr">{user.email}</span> ·{' '}
+            <button onClick={() => void signOut(auth)} className="font-medium text-indigo underline">
+              התנתקות
+            </button>
+          </p>
         </div>
       ) : (
         <TopBar title="פרטי העסק" />
@@ -178,11 +187,38 @@ export function Settings({ onboarding = false }: { onboarding?: boolean }) {
               </div>
             </Card>
 
-            <div ref={backupRef}>
+            <div ref={backupRef} className="space-y-3">
               <Card className="space-y-3">
-                <h2 className="text-lg font-bold">גיבוי</h2>
+                <h2 className="text-lg font-bold">חשבון וגיבוי בענן</h2>
+                <div className="flex items-center gap-3">
+                  <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-violet text-white">
+                    <Icon name="user" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium" dir="ltr">
+                      {user.email}
+                    </p>
+                    <SyncLine sync={sync} />
+                  </div>
+                </div>
+                {sync.status === 'error' && sync.error && <p className="rounded-xl bg-peach p-3 text-sm text-orange">{sync.error}</p>}
                 <p className="text-sm text-ink-soft">
-                  הנתונים נשמרים במכשיר הזה בלבד. מומלץ לייצא גיבוי באופן קבוע. (תמונות ההוצאות לא נכללות בקובץ הגיבוי.)
+                  כל המסמכים, הלקוחות וההוצאות (כולל תמונות הקבלות) נשמרים בחשבון. נכנסים מכל מכשיר עם אותו אימייל — והכל שם. אפשר לעבוד גם בלי אינטרנט; השינויים יעלו כשהחיבור יחזור.
+                </p>
+                <Button
+                  variant="danger"
+                  className="w-full"
+                  onClick={() => {
+                    if (confirm('להתנתק מהחשבון?')) void signOut(auth)
+                  }}
+                >
+                  התנתקות
+                </Button>
+              </Card>
+              <Card className="space-y-3">
+                <h2 className="text-lg font-bold">קובץ גיבוי</h2>
+                <p className="text-sm text-ink-soft">
+                  בנוסף לענן, אפשר לשמור עותק כקובץ במכשיר. (תמונות ההוצאות לא נכללות בקובץ.)
                 </p>
                 <div className="flex gap-2">
                   <Button variant="secondary" onClick={exportBackup} className="flex-1">
@@ -207,5 +243,22 @@ export function Settings({ onboarding = false }: { onboarding?: boolean }) {
         </Button>
       </div>
     </div>
+  )
+}
+
+function SyncLine({ sync }: { sync: SyncState }) {
+  const map = {
+    loading: { dot: 'bg-slate-tile', text: 'מתחבר לענן…' },
+    synced: { dot: 'bg-mint', text: 'מגובה בענן' },
+    saving: { dot: 'bg-violet', text: 'שומר בענן…' },
+    offline: { dot: 'bg-orange', text: 'אין חיבור — השינויים יעלו כשיחזור' },
+    error: { dot: 'bg-orange', text: 'הגיבוי לענן לא פעיל' },
+  }[sync.status]
+  return (
+    <p className="flex items-center gap-2 text-sm text-ink-soft">
+      <span className={`h-2.5 w-2.5 rounded-full ${map.dot}`} />
+      {map.text}
+      {sync.status === 'synced' && sync.lastSyncedAt && ` · ${new Date(sync.lastSyncedAt).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}`}
+    </p>
   )
 }

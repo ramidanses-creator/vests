@@ -1,5 +1,6 @@
 // Expense files (photos, PDFs) live in IndexedDB — localStorage is too small for them.
 import { useEffect, useState } from 'react'
+import { fetchCloudFile } from '../cloud'
 
 const DB_NAME = 'pinkas-files'
 const STORE = 'files'
@@ -50,6 +51,7 @@ export function useFileUrl(id: string | undefined): string | undefined {
     let objectUrl: string | undefined
     let cancelled = false
     getFile(id)
+      .then((blob) => blob ?? fetchCloudFile(id))
       .then((blob) => {
         if (cancelled || !blob) return
         objectUrl = URL.createObjectURL(blob)

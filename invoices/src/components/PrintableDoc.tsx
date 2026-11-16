@@ -2,14 +2,18 @@ import type { Business, Doc } from '../types'
 import { BUSINESS_TYPE_LABELS, DOC_META, computeTotals, docChargesVat, paymentLabel } from '../utils/docs'
 import { fmt, fmtDate, ils } from '../utils/format'
 
-export function PrintableDoc({ doc, business, relatedTitle }: { doc: Doc; business: Business; relatedTitle?: string }) {
+export function PrintableDoc({ doc, business, relatedTitle, flat = false }: { doc: Doc; business: Business; relatedTitle?: string; flat?: boolean }) {
   const meta = DOC_META[doc.type]
   const t = computeTotals(doc)
   const vat = docChargesVat(doc.type, business.type) && meta.hasItems
   const draft = doc.status === 'draft'
 
   return (
-    <article className="print-sheet relative mx-auto max-w-[800px] overflow-hidden rounded-3xl bg-white p-6 text-[13px] leading-relaxed text-ink shadow-sm sm:p-10">
+    <article
+      className={`print-sheet relative mx-auto overflow-hidden bg-white text-[13px] leading-relaxed text-ink ${
+        flat ? 'w-[794px] p-12' : 'max-w-[800px] rounded-3xl p-6 shadow-sm sm:p-10'
+      }`}
+    >
       {draft && (
         <div className="pointer-events-none absolute inset-0 grid place-items-center text-7xl font-black text-ink/5 -rotate-12">טיוטה</div>
       )}
@@ -68,9 +72,18 @@ export function PrintableDoc({ doc, business, relatedTitle }: { doc: Doc; busine
           </thead>
           <tbody>
             {doc.items.map((i, idx) => (
-              <tr key={i.id} className="border-b border-line/70 align-top">
+              <tr key={i.id} className={`border-b border-line/70 ${i.image ? "align-middle" : "align-top"}`}>
                 <td className="py-2">{idx + 1}</td>
-                <td className="py-2">{i.description}</td>
+                <td className="py-2">
+                  {i.image ? (
+                    <div className="flex items-center gap-3">
+                      <img src={i.image} alt="" className="h-20 w-20 shrink-0 rounded-lg border border-line object-cover" />
+                      <span>{i.description}</span>
+                    </div>
+                  ) : (
+                    i.description
+                  )}
+                </td>
                 <td className="py-2 text-center">{fmt(i.quantity)}</td>
                 <td className="py-2 text-left">{ils(i.unitPrice)}</td>
                 <td className="py-2 text-left">{ils(i.quantity * i.unitPrice)}</td>

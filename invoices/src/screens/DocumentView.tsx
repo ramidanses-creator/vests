@@ -1,11 +1,12 @@
 import { PrintableDoc } from '../components/PrintableDoc'
 import { DocRow } from '../components/DocRow'
+import { ShareBar } from '../components/ShareBar'
 import { Card, Icon, TopBar } from '../components/ui'
 import { go, useRoute } from '../router'
 import { useStore } from '../store'
 import type { DocType } from '../types'
 import { DOC_META, computeTotals, docTitle, isOpen } from '../utils/docs'
-import { ils, waPhone } from '../utils/format'
+import { ils } from '../utils/format'
 
 export function DocumentView({ id }: { id?: string }) {
   const { data, setDocClosed } = useStore()
@@ -29,19 +30,6 @@ export function DocumentView({ id }: { id?: string }) {
   const exempt = business.type === 'exempt'
 
   const message = `שלום ${doc.customer.name},\nמצורפת ${title} מאת ${business.name} על סך ${ils(t.total)}.\nתודה!`
-
-  async function share() {
-    if (navigator.share) {
-      try {
-        await navigator.share({ title, text: message })
-      } catch {
-        // user cancelled
-      }
-    } else {
-      await navigator.clipboard?.writeText(message)
-      alert('הטקסט הועתק')
-    }
-  }
 
   const followUps: { label: string; icon: string; tone: string; to: string }[] = []
   const from = (type: DocType, how = '') => `/new/${type}?from=${doc.id}${how ? `&how=${how}` : ''}`
@@ -76,29 +64,7 @@ export function DocumentView({ id }: { id?: string }) {
         </div>
       )}
 
-      <div className="no-print mx-4 mb-4 grid grid-cols-4 gap-2">
-        {[
-          { icon: 'print', label: 'הדפסה / PDF', onClick: () => window.print(), tone: 'bg-white' },
-          {
-            icon: 'chat',
-            label: 'וואטסאפ',
-            onClick: () => window.open(`https://wa.me/${doc.customer.phone ? waPhone(doc.customer.phone) : ''}?text=${encodeURIComponent(message)}`, '_blank'),
-            tone: 'bg-white',
-          },
-          {
-            icon: 'mail',
-            label: 'מייל',
-            onClick: () => (window.location.href = `mailto:${doc.customer.email}?subject=${encodeURIComponent(`${title} — ${business.name}`)}&body=${encodeURIComponent(message)}`),
-            tone: 'bg-white',
-          },
-          { icon: 'share', label: 'שיתוף', onClick: share, tone: 'bg-white' },
-        ].map((a) => (
-          <button key={a.label} onClick={a.onClick} className={`flex flex-col items-center gap-1.5 rounded-2xl ${a.tone} py-3 text-xs font-medium`}>
-            <Icon name={a.icon} />
-            {a.label}
-          </button>
-        ))}
-      </div>
+      <ShareBar doc={doc} business={business} title={title} relatedTitle={related ? docTitle(related) : undefined} message={message} />
 
       <div className="px-3 sm:px-4">
         <PrintableDoc doc={doc} business={business} relatedTitle={related ? docTitle(related) : undefined} />

@@ -17,7 +17,7 @@ function periodStart(p: Period): string {
 }
 
 export function Home() {
-  const { data } = useStore()
+  const { data, sync } = useStore()
   const { business, docs, expenses } = data
   const [period, setPeriod] = useState<Period>('week')
   const [moreOpen, setMoreOpen] = useState(false)
@@ -58,9 +58,15 @@ export function Home() {
         <Logo size={44} />
         <button
           onClick={() => go('/settings')}
-          className="grid h-12 w-12 place-items-center rounded-full bg-violet text-lg font-semibold text-white"
-          aria-label="הגדרות העסק"
+          className="relative grid h-12 w-12 place-items-center rounded-full bg-violet text-lg font-semibold text-white"
+          aria-label="הגדרות העסק וגיבוי"
         >
+          <span
+            className={`absolute -bottom-0.5 -left-0.5 h-4 w-4 rounded-full border-2 border-mist ${
+              sync.status === 'synced' ? 'bg-mint' : sync.status === 'saving' || sync.status === 'loading' ? 'bg-violet' : 'bg-orange'
+            }`}
+            title={sync.status === 'synced' ? 'מגובה בענן' : sync.status === 'error' ? 'הגיבוי לענן לא פעיל' : 'מסנכרן…'}
+          />
           {business.logo ? <img src={business.logo} alt="" className="h-12 w-12 rounded-full object-cover" /> : initials(business.ownerName || business.name)}
         </button>
       </header>
