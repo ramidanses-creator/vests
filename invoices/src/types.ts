@@ -54,6 +54,8 @@ export interface LineItem {
   description: string
   quantity: number
   unitPrice: number
+  /** Small product photo (JPEG data URL), shown on the document and in its PDF. */
+  image?: string
 }
 
 export interface Payment {

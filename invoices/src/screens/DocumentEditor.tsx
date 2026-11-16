@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { CustomerField } from '../components/CustomerField'
 import { Button, Card, Field, Icon, NumberInput, Radio, Sheet, TopBar, Toggle, inputCls } from '../components/ui'
 import { back, replace } from '../router'
@@ -13,6 +13,7 @@ import {
   docTitle,
   needsAllocation,
 } from '../utils/docs'
+import { compressImage, readAsDataUrl } from '../utils/fileStore'
 import { fmt, ils, round2, todayISO, uid } from '../utils/format'
 
 interface Props {
@@ -235,7 +236,11 @@ export function DocumentEditor(props: Props) {
             {doc.items.map((item, idx) => (
               <div key={item.id} className="space-y-2 rounded-2xl bg-mist p-3">
                 <div className="flex items-center gap-2">
-                  <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white text-sm font-semibold">{idx + 1}</span>
+                  <ItemImageButton
+                    index={idx}
+                    image={item.image}
+                    onChange={(image) => updateItem(item.id, { image })}
+                  />
                   <input
                     value={item.description}
                     onChange={(e) => updateItem(item.id, { description: e.target.value })}
@@ -253,7 +258,7 @@ export function DocumentEditor(props: Props) {
                     </button>
                   )}
                 </div>
-                <div className="grid grid-cols-[1fr_1.4fr_1.2fr] items-end gap-2 pr-9">
+                <div className="grid grid-cols-[1fr_1.4fr_1.2fr] items-end gap-2 pr-14">
                   <Field label="כמות">
                     <NumberInput value={item.quantity} onChange={(quantity) => updateItem(item.id, { quantity })} placeholder="1" />
                   </Field>
@@ -518,5 +523,62 @@ function CardsArt({ className }: { className?: string }) {
         <rect x="60" y="78" width="26" height="4" rx="2" fill="#ffd84d" />
       </g>
     </svg>
+  )
+}
+
+/** Square button at the start of an item row: adds a product photo, or shows it with options to replace/remove. */
+function ItemImageButton({ index, image, onChange }: { index: number; image?: string; onChange: (image: string | undefined) => void }) {
+  const input = useRef<HTMLInputElement>(null)
+  const [menu, setMenu] = useState(false)
+  const [busy, setBusy] = useState(false)
+
+  async function pick(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0]
+    e.target.value = ''
+    if (!f) return
+    setBusy(true)
+    try {
+      onChange(await readAsDataUrl(await compressImage(f, 400, 0.7)))
+    } finally {
+      setBusy(false)
+      setMenu(false)
+    }
+  }
+
+  return (
+    <div className="relative shrink-0">
+      <button
+        type="button"
+        onClick={() => (image ? setMenu((v) => !v) : input.current?.click())}
+        className="relative grid h-12 w-12 place-items-center overflow-hidden rounded-xl border-2 border-dashed border-ink/20 bg-white text-ink-soft"
+        aria-label={image ? `תמונת פריט ${index + 1}` : `הוספת תמונה לפריט ${index + 1}`}
+      >
+        {image ? (
+          <img src={image} alt="" className="h-full w-full object-cover" />
+        ) : busy ? (
+          <span className="text-xs">…</span>
+        ) : (
+          <Icon name="camera" size={20} />
+        )}
+      </button>
+      {menu && image && (
+        <div className="absolute right-0 top-full z-10 mt-1 w-36 overflow-hidden rounded-xl border border-line bg-white shadow-lg">
+          <button type="button" onClick={() => input.current?.click()} className="block w-full px-3 py-2.5 text-right text-sm hover:bg-mist">
+            החלפת תמונה
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              onChange(undefined)
+              setMenu(false)
+            }}
+            className="block w-full px-3 py-2.5 text-right text-sm text-orange hover:bg-mist"
+          >
+            הסרת תמונה
+          </button>
+        </div>
+      )}
+      <input ref={input} type="file" accept="image/*" onChange={pick} className="hidden" />
+    </div>
   )
 }

@@ -72,9 +72,18 @@ export function PrintableDoc({ doc, business, relatedTitle, flat = false }: { do
           </thead>
           <tbody>
             {doc.items.map((i, idx) => (
-              <tr key={i.id} className="border-b border-line/70 align-top">
+              <tr key={i.id} className={`border-b border-line/70 ${i.image ? "align-middle" : "align-top"}`}>
                 <td className="py-2">{idx + 1}</td>
-                <td className="py-2">{i.description}</td>
+                <td className="py-2">
+                  {i.image ? (
+                    <div className="flex items-center gap-3">
+                      <img src={i.image} alt="" className="h-20 w-20 shrink-0 rounded-lg border border-line object-cover" />
+                      <span>{i.description}</span>
+                    </div>
+                  ) : (
+                    i.description
+                  )}
+                </td>
                 <td className="py-2 text-center">{fmt(i.quantity)}</td>
                 <td className="py-2 text-left">{ils(i.unitPrice)}</td>
                 <td className="py-2 text-left">{ils(i.quantity * i.unitPrice)}</td>
