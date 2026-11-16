@@ -18,7 +18,7 @@
   --color-slate-tile: #b6c3ca;
   --color-mist: #f4f6fa;
   --color-line: #e3e7ef;
-  --font-sans: 'Rubik', system-ui, 'Segoe UI', Arial, sans-serif;
+  --font-sans: 'Rubik Variable', 'Rubik', system-ui, 'Segoe UI', Arial, sans-serif;
 
   --animate-sheet: sheet 0.28s cubic-bezier(0.2, 0.9, 0.3, 1);
   --animate-fade: fade 0.2s ease-out;

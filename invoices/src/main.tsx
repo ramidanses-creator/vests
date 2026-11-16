@@ -5,6 +5,7 @@ import './index.css'
 import App from './App.tsx'
 import { Logo } from './components/ui.tsx'
 import { auth } from './firebase.ts'
+import { installFonts } from './fonts.ts'
 import { AuthScreen } from './screens/AuthScreen.tsx'
 import { StoreProvider } from './store.tsx'
 
@@ -32,6 +33,8 @@ function Root() {
     </StoreProvider>
   )
 }
+
+installFonts()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
