@@ -160,6 +160,17 @@ export function Settings({ onboarding = false }: { onboarding?: boolean }) {
                   </Field>
                 </div>
               )}
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="תדירות דיווח" hint="מע״מ ומקדמות">
+                  <select value={b.vatPeriod} onChange={(e) => set({ vatPeriod: e.target.value as Business['vatPeriod'] })} className={inputCls}>
+                    <option value="bimonthly">דו־חודשי</option>
+                    <option value="monthly">חודשי</option>
+                  </select>
+                </Field>
+                <Field label="שיעור מקדמות מס הכנסה (%)" hint="מופיע בפנקס המקדמות">
+                  <NumberInput value={b.incomeTaxAdvanceRate} onChange={(incomeTaxAdvanceRate) => set({ incomeTaxAdvanceRate: Math.max(0, incomeTaxAdvanceRate) })} />
+                </Field>
+              </div>
               <Field label="אימייל של רו״ח">
                 <input value={b.accountantEmail} onChange={(e) => set({ accountantEmail: e.target.value })} type="email" dir="ltr" className={`${inputCls} text-right`} />
               </Field>

@@ -16,6 +16,7 @@ import { ReportDetail } from './screens/Reports'
 import { Sales } from './screens/Sales'
 import { Settings } from './screens/Settings'
 import { initials } from './utils/format'
+import { REPORTS, type ReportKind } from './utils/reports'
 
 const NAV = [
   { path: 'income', label: 'הכנסות', icon: 'chart', active: 'text-mint' },
@@ -82,7 +83,7 @@ export default function App() {
       screen = <CustomerPage id={id} onNewDoc={openNew} />
       break
     case 'report':
-      screen = <ReportDetail kind={id === 'expenses' ? 'expenses' : 'income'} month={query.get('m') ?? undefined} />
+      screen = <ReportDetail kind={REPORTS.some((r) => r.kind === id) ? (id as ReportKind) : 'income'} month={query.get('m') ?? undefined} />
       shell = false
       break
     case 'settings':
