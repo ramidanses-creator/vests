@@ -88,6 +88,10 @@ export interface Doc {
   notes: string
   allocationNumber: string
   relatedDocId?: string
+  /** Advance the customer is asked to pay up front (incl. VAT), on quotes / deal invoices / tax invoices. */
+  depositAmount?: number
+  /** This document records a deposit paid against `relatedDocId`. */
+  isDeposit?: boolean
   /** For documents that await payment (tax invoice / deal invoice): marked paid. */
   closed: boolean
   createdAt: string

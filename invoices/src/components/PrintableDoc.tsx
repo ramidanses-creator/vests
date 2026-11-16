@@ -103,6 +103,15 @@ export function PrintableDoc({ doc, business, relatedTitle, flat = false }: { do
             <span>{doc.type === 'credit_invoice' ? 'סה״כ זיכוי' : 'סה״כ'}</span>
             <span>{ils(t.total)}</span>
           </div>
+          {!!doc.depositAmount && (
+            <div className="mt-3 space-y-1 rounded-xl bg-lime/60 p-3">
+              <div className="flex justify-between gap-4 whitespace-nowrap font-bold">
+                <span>מקדמה לתשלום</span>
+                <span>{ils(doc.depositAmount)}</span>
+              </div>
+              <Row label="יתרה לתשלום לאחר המקדמה" value={ils(Math.max(0, t.total - doc.depositAmount))} />
+            </div>
+          )}
         </div>
       )}
 
