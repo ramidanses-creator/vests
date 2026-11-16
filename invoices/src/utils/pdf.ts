@@ -1,20 +1,19 @@
 // Turns the rendered document into a real A4 PDF file (image-based, so Hebrew,
 // the logo and the layout come out exactly as on screen). Libraries load on demand.
 
+import { FONT_FAMILY, embeddedFontCss } from '../fonts'
+
 const A4_W_MM = 210
 const A4_H_MM = 297
 
 export async function renderPdf(node: HTMLElement, fileName: string): Promise<File> {
   const [{ toCanvas }, { jsPDF }] = await Promise.all([import('html-to-image'), import('jspdf')])
+  // The page is drawn as an image, which can't load fonts by itself: hand it the font
+  // inline, otherwise phones substitute another font and the text overflows/overlaps.
+  const fontEmbedCSS = await embeddedFontCss().catch(() => undefined)
+  await document.fonts?.load(`16px "${FONT_FAMILY}"`).catch(() => {})
   await document.fonts?.ready
-  const opts = { pixelRatio: 2, backgroundColor: '#ffffff', cacheBust: false }
-  let canvas: HTMLCanvasElement
-  try {
-    canvas = await toCanvas(node, opts)
-  } catch {
-    // Web font couldn't be embedded (e.g. offline) — fall back to the system font.
-    canvas = await toCanvas(node, { ...opts, skipFonts: true })
-  }
+  const canvas = await toCanvas(node, { pixelRatio: 2, backgroundColor: '#ffffff', cacheBust: false, fontEmbedCSS, skipFonts: !fontEmbedCSS })
 
   const pdf = new jsPDF({ unit: 'mm', format: 'a4', compress: true })
   const pxPerMm = canvas.width / A4_W_MM

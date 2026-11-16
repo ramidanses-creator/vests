@@ -94,12 +94,12 @@ export function PrintableDoc({ doc, business, relatedTitle, flat = false }: { do
       )}
 
       {meta.hasItems && (
-        <div className="mr-auto mt-4 w-full max-w-72 space-y-1">
+        <div className="mr-auto mt-4 w-full max-w-80 space-y-1">
           {vat && doc.pricesIncludeVat && <p className="text-xs text-ink-soft">המחירים כוללים מע״מ</p>}
           {t.discount > 0 && <Row label={`הנחה ${fmt(doc.discountPercent)}%`} value={`−${ils(t.discount)}`} />}
           {vat && <Row label="סה״כ לפני מע״מ" value={ils(t.net)} />}
           {vat && <Row label={`מע״מ ${doc.vatRate}%`} value={ils(t.vat)} />}
-          <div className="flex justify-between border-t-2 border-ink pt-2 text-base font-bold">
+          <div className="flex justify-between gap-4 whitespace-nowrap border-t-2 border-ink pt-2 text-base font-bold">
             <span>{doc.type === 'credit_invoice' ? 'סה״כ זיכוי' : 'סה״כ'}</span>
             <span>{ils(t.total)}</span>
           </div>
@@ -131,7 +131,7 @@ export function PrintableDoc({ doc, business, relatedTitle, flat = false }: { do
               ))}
             </tbody>
           </table>
-          <div className="mr-auto mt-2 flex w-full max-w-72 justify-between border-t-2 border-ink pt-2 text-base font-bold">
+          <div className="mr-auto mt-2 flex w-full max-w-80 justify-between gap-4 whitespace-nowrap border-t-2 border-ink pt-2 text-base font-bold">
             <span>סה״כ שולם</span>
             <span>{ils(t.paid)}</span>
           </div>
@@ -156,7 +156,7 @@ export function PrintableDoc({ doc, business, relatedTitle, flat = false }: { do
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex justify-between">
+    <div className="flex justify-between gap-4 whitespace-nowrap">
       <span className="text-ink-soft">{label}</span>
       <span>{value}</span>
     </div>
