@@ -24,8 +24,17 @@ jobs:
         with:
           node-version: 20
           cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            invoices/package-lock.json
       - run: npm ci
       - run: npm run build
+      - name: Build invoices app into /invoices
+        working-directory: invoices
+        run: |
+          npm ci
+          npm test
+          npm run build -- --outDir ../dist/invoices --emptyOutDir
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

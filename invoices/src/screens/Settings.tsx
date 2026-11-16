@@ -1,0 +1,211 @@
+import { useEffect, useRef, useState } from 'react'
+import { Button, Card, Field, Logo, NumberInput, Radio, TopBar, inputCls } from '../components/ui'
+import { back, useRoute } from '../router'
+import { useStore } from '../store'
+import type { AppData, Business, BusinessType } from '../types'
+import { BUSINESS_TYPE_LABELS, DOC_META, allowedDocTypes } from '../utils/docs'
+import { compressImage, readAsDataUrl } from '../utils/fileStore'
+
+export function Settings({ onboarding = false }: { onboarding?: boolean }) {
+  const { data, setBusiness, replaceAll } = useStore()
+  const { query } = useRoute()
+  const [b, setB] = useState<Business>(data.business)
+  const [error, setError] = useState('')
+  const logoInput = useRef<HTMLInputElement>(null)
+  const importInput = useRef<HTMLInputElement>(null)
+  const backupRef = useRef<HTMLDivElement>(null)
+  const set = (patch: Partial<Business>) => setB((x) => ({ ...x, ...patch }))
+
+  useEffect(() => {
+    if (query.get('section') === 'backup') backupRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [query])
+
+  function save() {
+    if (!b.name.trim()) return setError('יש למלא את שם העסק')
+    if (!b.taxId.trim()) return setError(b.type === 'company' ? 'יש למלא ח.פ.' : 'יש למלא מספר עוסק / ת.ז.')
+    setError('')
+    setBusiness({ ...b, name: b.name.trim() })
+    if (!onboarding) back()
+  }
+
+  async function onLogo(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0]
+    e.target.value = ''
+    if (!f) return
+    const small = await compressImage(f, 320, 0.85)
+    set({ logo: await readAsDataUrl(small) })
+  }
+
+  function exportBackup() {
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `pinkas-backup-${new Date().toISOString().slice(0, 10)}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  function importBackup(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0]
+    e.target.value = ''
+    if (!f) return
+    f.text()
+      .then((t) => {
+        const parsed = JSON.parse(t) as AppData
+        if (!parsed.business || !Array.isArray(parsed.docs)) throw new Error('bad')
+        if (confirm(`לייבא ${parsed.docs.length} מסמכים? הנתונים הקיימים יוחלפו.`)) {
+          replaceAll({ business: parsed.business, docs: parsed.docs, customers: parsed.customers ?? [], expenses: parsed.expenses ?? [] })
+          setB({ ...b, ...parsed.business })
+        }
+      })
+      .catch(() => alert('הקובץ אינו גיבוי תקין'))
+  }
+
+  const issuedTypes = new Set(data.docs.filter((d) => d.status === 'issued').map((d) => d.type))
+
+  return (
+    <div className="min-h-dvh bg-mist pb-32">
+      {onboarding ? (
+        <div className="rounded-b-[36px] bg-lime-bg px-6 pb-10 pt-[max(env(safe-area-inset-top),32px)] text-center">
+          <div className="flex justify-center">
+            <Logo size={64} />
+          </div>
+          <h1 className="mt-4 text-4xl font-extrabold leading-tight text-[#1d4d2b]">ברוכים הבאים לפנקס</h1>
+          <p className="mx-auto mt-3 max-w-xs text-lg text-ink">קבלות, חשבוניות והוצאות — מכל מקום. נתחיל בפרטי העסק שיופיעו על המסמכים.</p>
+        </div>
+      ) : (
+        <TopBar title="פרטי העסק" />
+      )}
+
+      <div className={`space-y-3 px-4 ${onboarding ? '-mt-5' : ''}`}>
+        <Card className="space-y-4">
+          <h2 className="text-lg font-bold">סוג העסק</h2>
+          <div role="radiogroup">
+            {(Object.keys(BUSINESS_TYPE_LABELS) as BusinessType[]).map((t) => (
+              <Radio key={t} checked={b.type === t} onChange={() => set({ type: t })} label={BUSINESS_TYPE_LABELS[t]} />
+            ))}
+          </div>
+          <p className="text-sm text-ink-soft">
+            {b.type === 'exempt'
+              ? 'עוסק פטור מפיק קבלות, חשבונות עסקה והצעות מחיר — ללא מע״מ.'
+              : 'אפשר להפיק חשבוניות מס, חשבוניות מס/קבלה, חשבוניות זיכוי, קבלות, חשבונות עסקה והצעות מחיר.'}
+          </p>
+        </Card>
+
+        <Card className="space-y-3">
+          <h2 className="text-lg font-bold">פרטים שיופיעו על המסמכים</h2>
+          <div className="flex items-center gap-4">
+            <button onClick={() => logoInput.current?.click()} className="grid h-20 w-20 shrink-0 place-items-center overflow-hidden rounded-2xl bg-lavender text-sm text-ink-soft">
+              {b.logo ? <img src={b.logo} alt="לוגו" className="h-full w-full object-contain" /> : 'לוגו'}
+            </button>
+            <div className="text-sm text-ink-soft">
+              <button onClick={() => logoInput.current?.click()} className="font-medium text-indigo">
+                {b.logo ? 'החלפת לוגו' : 'הוספת לוגו'}
+              </button>
+              {b.logo && (
+                <button onClick={() => set({ logo: undefined })} className="mr-3 text-orange">
+                  הסרה
+                </button>
+              )}
+              <p>אופציונלי</p>
+            </div>
+            <input ref={logoInput} type="file" accept="image/*" onChange={onLogo} className="hidden" />
+          </div>
+          <Field label="שם העסק">
+            <input value={b.name} onChange={(e) => set({ name: e.target.value })} className={inputCls} />
+          </Field>
+          <Field label="השם שלך (לברכה בדף הבית)">
+            <input value={b.ownerName} onChange={(e) => set({ ownerName: e.target.value })} className={inputCls} />
+          </Field>
+          <Field label={b.type === 'company' ? 'ח.פ.' : 'מספר עוסק / ת.ז.'}>
+            <input value={b.taxId} onChange={(e) => set({ taxId: e.target.value })} inputMode="numeric" dir="ltr" className={`${inputCls} text-right`} />
+          </Field>
+          <Field label="כתובת">
+            <input value={b.address} onChange={(e) => set({ address: e.target.value })} className={inputCls} />
+          </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="טלפון">
+              <input value={b.phone} onChange={(e) => set({ phone: e.target.value })} type="tel" dir="ltr" className={`${inputCls} text-right`} />
+            </Field>
+            <Field label="אימייל">
+              <input value={b.email} onChange={(e) => set({ email: e.target.value })} type="email" dir="ltr" className={`${inputCls} text-right`} />
+            </Field>
+          </div>
+          <Field label="טקסט קבוע בתחתית כל מסמך" hint="למשל פרטי חשבון בנק להעברה">
+            <textarea value={b.footerNote} onChange={(e) => set({ footerNote: e.target.value })} rows={2} className={inputCls} />
+          </Field>
+        </Card>
+
+        {!onboarding && (
+          <>
+            <Card className="space-y-3">
+              <h2 className="text-lg font-bold">הגדרות מס</h2>
+              {b.type !== 'exempt' && (
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="שיעור מע״מ (%)">
+                    <NumberInput value={b.vatRate} onChange={(vatRate) => set({ vatRate })} />
+                  </Field>
+                  <Field label="סף למספר הקצאה (₪)" hint="לפני מע״מ">
+                    <NumberInput value={b.allocationThreshold} onChange={(allocationThreshold) => set({ allocationThreshold })} />
+                  </Field>
+                </div>
+              )}
+              <Field label="אימייל של רו״ח">
+                <input value={b.accountantEmail} onChange={(e) => set({ accountantEmail: e.target.value })} type="email" dir="ltr" className={`${inputCls} text-right`} />
+              </Field>
+            </Card>
+
+            <Card className="space-y-3">
+              <h2 className="text-lg font-bold">מספור מסמכים</h2>
+              <p className="text-sm text-ink-soft">
+                אם עברתם מתוכנה אחרת — המשיכו מהמספר הבא שם. אפשר לשנות רק לפני שהופק המסמך הראשון מאותו סוג.
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                {allowedDocTypes(b.type).map((t) => (
+                  <Field key={t} label={DOC_META[t].label}>
+                    {issuedTypes.has(t) ? (
+                      <div className={`${inputCls} bg-mist text-ink-soft`}>כבר בשימוש</div>
+                    ) : (
+                      <NumberInput
+                        value={b.startNumbers[t] ?? 1}
+                        onChange={(n) => set({ startNumbers: { ...b.startNumbers, [t]: Math.max(1, Math.floor(n)) } })}
+                        placeholder="1"
+                      />
+                    )}
+                  </Field>
+                ))}
+              </div>
+            </Card>
+
+            <div ref={backupRef}>
+              <Card className="space-y-3">
+                <h2 className="text-lg font-bold">גיבוי</h2>
+                <p className="text-sm text-ink-soft">
+                  הנתונים נשמרים במכשיר הזה בלבד. מומלץ לייצא גיבוי באופן קבוע. (תמונות ההוצאות לא נכללות בקובץ הגיבוי.)
+                </p>
+                <div className="flex gap-2">
+                  <Button variant="secondary" onClick={exportBackup} className="flex-1">
+                    ייצוא גיבוי
+                  </Button>
+                  <Button variant="secondary" onClick={() => importInput.current?.click()} className="flex-1">
+                    ייבוא גיבוי
+                  </Button>
+                  <input ref={importInput} type="file" accept="application/json" onChange={importBackup} className="hidden" />
+                </div>
+              </Card>
+            </div>
+          </>
+        )}
+
+        {error && <p className="rounded-2xl bg-peach p-3 text-orange">{error}</p>}
+      </div>
+
+      <div className="fixed inset-x-0 bottom-0 z-30 mx-auto max-w-lg bg-gradient-to-t from-mist via-mist to-transparent px-4 pb-[max(env(safe-area-inset-bottom),16px)] pt-6">
+        <Button onClick={save} className="w-full !py-4 text-lg">
+          {onboarding ? 'יאללה, מתחילים' : 'שמירה'}
+        </Button>
+      </div>
+    </div>
+  )
+}

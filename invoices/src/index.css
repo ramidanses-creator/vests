@@ -1,0 +1,71 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #0f1b3d;
+  --color-ink-soft: #5b6478;
+  --color-lime: #d9fa8f;
+  --color-lime-bg: #cdf67c;
+  --color-lavender: #efe6fc;
+  --color-lavender-bg: #ebe5fd;
+  --color-violet: #a394f2;
+  --color-indigo: #5b5bf0;
+  --color-plum: #7a2266;
+  --color-peach: #ffe1d7;
+  --color-peach-bg: #fdddd3;
+  --color-orange: #ff5b2b;
+  --color-sky: #e6efff;
+  --color-mint: #12b383;
+  --color-slate-tile: #b6c3ca;
+  --color-mist: #f4f6fa;
+  --color-line: #e3e7ef;
+  --font-sans: 'Rubik', system-ui, 'Segoe UI', Arial, sans-serif;
+
+  --animate-sheet: sheet 0.28s cubic-bezier(0.2, 0.9, 0.3, 1);
+  --animate-fade: fade 0.2s ease-out;
+  --animate-pop: pop 0.25s cubic-bezier(0.2, 0.9, 0.3, 1.3);
+}
+
+@keyframes sheet {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+@keyframes fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes pop {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+html {
+  direction: rtl;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  margin: 0;
+  background: var(--color-mist);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type='number'] {
+  -moz-appearance: textfield;
+}
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { scrollbar-width: none; }
+
+@media print {
+  @page { size: A4; margin: 14mm; }
+  body { background: white !important; }
+  .no-print { display: none !important; }
+  .print-sheet { box-shadow: none !important; border-radius: 0 !important; margin: 0 !important; padding: 0 !important; max-width: none !important; }
+  .print-wrap { padding: 0 !important; background: white !important; }
+}
