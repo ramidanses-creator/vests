@@ -1,9 +1,13 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import type { User } from 'firebase/auth'
+import { useCloudSync, type SyncState } from './cloud'
 import type { AppData, Business, Customer, Doc, Expense } from './types'
 import { DOC_META, computeTotals, nextDocNumber } from './utils/docs'
 import { todayISO, uid } from './utils/format'
 
-const KEY = 'pinkas:v1'
+// Data saved before accounts existed; handed to the first account that signs in on this device.
+const LEGACY_KEY = 'pinkas:v1'
+const keyFor = (uid: string) => `pinkas:v1:${uid}`
 
 export const DEFAULT_BUSINESS: Business = {
   name: '',
@@ -20,9 +24,9 @@ export const DEFAULT_BUSINESS: Business = {
   startNumbers: {},
 }
 
-function load(): AppData {
+function load(userId: string): AppData {
   try {
-    const raw = localStorage.getItem(KEY)
+    const raw = localStorage.getItem(keyFor(userId)) ?? localStorage.getItem(LEGACY_KEY)
     if (raw) {
       const parsed = JSON.parse(raw) as Partial<AppData>
       return {
@@ -40,6 +44,8 @@ function load(): AppData {
 
 interface Store {
   data: AppData
+  user: User
+  sync: SyncState
   setBusiness: (b: Business) => void
   upsertCustomer: (c: Customer) => void
   deleteCustomer: (id: string) => void
@@ -54,21 +60,25 @@ interface Store {
 
 const Ctx = createContext<Store | null>(null)
 
-export function StoreProvider({ children }: { children: ReactNode }) {
-  const [data, setDataState] = useState<AppData>(load)
+export function StoreProvider({ user, children, loading }: { user: User; children: ReactNode; loading: ReactNode }) {
+  const [data, setDataState] = useState<AppData>(() => load(user.uid))
   const dataRef = useRef(data)
   const setData = useCallback((fn: (p: AppData) => AppData) => {
     dataRef.current = fn(dataRef.current)
     setDataState(dataRef.current)
   }, [])
 
+  const { ready, sync } = useCloudSync(user.uid, data, setData)
+
   useEffect(() => {
+    if (!ready) return
     try {
-      localStorage.setItem(KEY, JSON.stringify(data))
+      localStorage.setItem(keyFor(user.uid), JSON.stringify(data))
+      localStorage.removeItem(LEGACY_KEY)
     } catch {
-      // storage full or blocked — data stays in memory for this session
+      // storage full or blocked — data stays in memory and in the cloud
     }
-  }, [data])
+  }, [data, ready, user.uid])
 
   const issueDoc = useCallback((draft: Doc): Doc => {
     const prev = dataRef.current
@@ -111,6 +121,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const store = useMemo<Store>(
     () => ({
       data,
+      user,
+      sync,
       setBusiness: (business) => setData((p) => ({ ...p, business })),
       upsertCustomer: (c) =>
         setData((p) => ({
@@ -134,9 +146,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       deleteExpense: (id) => setData((p) => ({ ...p, expenses: p.expenses.filter((e) => e.id !== id) })),
       replaceAll: (d) => setData(() => ({ ...d, business: { ...DEFAULT_BUSINESS, ...d.business } })),
     }),
-    [data, issueDoc, setData],
+    [data, user, sync, issueDoc, setData],
   )
 
+  // Wait for the first cloud read so a new device doesn't flash the setup screen.
+  if (!ready) return <>{loading}</>
   return <Ctx.Provider value={store}>{children}</Ctx.Provider>
 }
 
