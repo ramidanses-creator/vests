@@ -1,4 +1,4 @@
-import type { BusinessType, Doc, DocType, Expense, LineItem, PaymentMethod } from '../types'
+import type { AppData, BusinessType, Doc, DocType, Expense, ExpenseType, LineItem, PaymentMethod } from '../types'
 import { round2 } from './format'
 
 interface DocMeta {
@@ -190,4 +190,42 @@ export function depositDeductionLines(
     const price = target.pricesIncludeVat || !target.vatRate ? total : round2(total / (1 + target.vatRate / 100))
     return { id: newId(), description: `בניכוי מקדמה ששולמה (${DOC_META[d.type].label} ${d.number})`, quantity: 1, unitPrice: -price }
   })
+}
+
+/** Only approved expenses count in reports and totals (older data has no status = approved). */
+export const isApproved = (e: Expense) => e.status === undefined || e.status === 'approved'
+export const isPending = (e: Expense) => e.status === 'pending'
+
+/** Built-in categories plus the ones the user defined, without duplicates. */
+export function expenseCategories(data: Pick<AppData, 'expenseTypes'>): string[] {
+  return [...new Set([...EXPENSE_CATEGORIES.filter((c) => c !== 'אחר'), ...data.expenseTypes.map((t) => t.name), 'אחר'])]
+}
+
+/**
+ * Fixed monthly expenses that are due by `today` and not created yet. Ids are derived
+ * from the type and month, so two devices never create the same expense twice.
+ */
+export function dueRecurringExpenses(types: ExpenseType[], expenses: Expense[], today: string): Expense[] {
+  const month = today.slice(0, 7)
+  const day = Number(today.slice(8, 10))
+  const existing = new Set(expenses.map((e) => e.id))
+  return types
+    .filter((t) => t.recurring && t.monthlyAmount > 0 && day >= Math.min(28, Math.max(1, t.dayOfMonth || 1)))
+    .map((t) => {
+      const d = String(Math.min(28, Math.max(1, t.dayOfMonth || 1))).padStart(2, '0')
+      return {
+        id: `rec_${t.id}_${month}`,
+        status: 'pending' as const,
+        recurringTypeId: t.id,
+        recurringMonth: month,
+        date: `${month}-${d}`,
+        supplier: t.supplier,
+        description: `${t.name} — הוצאה חודשית קבועה`,
+        category: t.name,
+        amount: t.monthlyAmount,
+        vat: 0,
+        createdAt: new Date().toISOString(),
+      }
+    })
+    .filter((e) => !existing.has(e.id))
 }

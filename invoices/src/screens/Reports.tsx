@@ -3,7 +3,7 @@ import { Card, Icon, Segmented, TopBar } from '../components/ui'
 import { go, replace } from '../router'
 import { useStore } from '../store'
 import type { AppData, Doc } from '../types'
-import { DOC_META, computeTotals, expenseNet, incomeOf } from '../utils/docs'
+import { DOC_META, computeTotals, expenseNet, incomeOf, isApproved } from '../utils/docs'
 import { fmtDate, ils, monthLabel, round2, shiftMonth, todayISO } from '../utils/format'
 
 /** "2026-11" → that month; "2026" → whole year. */
@@ -28,7 +28,7 @@ function summarize(data: AppData, period: string) {
   const sign = (d: Doc) => (d.type === 'credit_invoice' ? -1 : 1)
   const income = docs.reduce((s, d) => s + incomeOf(d, data.business.type), 0)
   const outputVat = docs.reduce((s, d) => s + sign(d) * computeTotals(d).vat, 0)
-  const expenses = data.expenses.filter((e) => e.date.startsWith(period))
+  const expenses = data.expenses.filter((e) => isApproved(e) && e.date.startsWith(period))
   const spent = expenses.reduce((s, e) => s + (data.business.type === 'exempt' ? e.amount : expenseNet(e)), 0)
   const inputVat = expenses.reduce((s, e) => s + e.vat, 0)
   return { docs, expenses, income: round2(income), outputVat: round2(outputVat), spent: round2(spent), inputVat: round2(inputVat) }

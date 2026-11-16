@@ -75,3 +75,42 @@ export function readAsDataUrl(blob: Blob): Promise<string> {
     r.readAsDataURL(blob)
   })
 }
+
+/**
+ * Makes a photographed receipt read like a scan: grayscale with the levels stretched,
+ * so faint print becomes dark and the paper becomes white.
+ */
+export async function enhanceScan(blob: Blob): Promise<Blob> {
+  if (!blob.type.startsWith('image/')) return blob
+  try {
+    const bitmap = await createImageBitmap(blob)
+    const canvas = document.createElement('canvas')
+    canvas.width = bitmap.width
+    canvas.height = bitmap.height
+    const ctx = canvas.getContext('2d')!
+    ctx.drawImage(bitmap, 0, 0)
+    const img = ctx.getImageData(0, 0, canvas.width, canvas.height)
+    const px = img.data
+    const hist = new Uint32Array(256)
+    for (let i = 0; i < px.length; i += 4) {
+      const g = (px[i] * 0.299 + px[i + 1] * 0.587 + px[i + 2] * 0.114) | 0
+      px[i] = g
+      hist[g]++
+    }
+    // Ignore the darkest/lightest 2% when picking the black and white points.
+    const total = px.length / 4
+    let lo = 0
+    let hi = 255
+    for (let acc = 0; lo < 255 && (acc += hist[lo]) < total * 0.02; lo++);
+    for (let acc = 0; hi > 0 && (acc += hist[hi]) < total * 0.02; hi--);
+    const range = Math.max(1, hi - lo)
+    for (let i = 0; i < px.length; i += 4) {
+      const v = Math.max(0, Math.min(255, ((px[i] - lo) * 255) / range))
+      px[i] = px[i + 1] = px[i + 2] = v
+    }
+    ctx.putImageData(img, 0, 0)
+    return (await new Promise<Blob | null>((r) => canvas.toBlob(r, 'image/jpeg', 0.8))) ?? blob
+  } catch {
+    return blob
+  }
+}

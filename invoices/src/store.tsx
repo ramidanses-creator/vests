@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import type { User } from 'firebase/auth'
 import { useCloudSync, type SyncState } from './cloud'
 import type { AppData, Business, Customer, Doc, Expense, ListKey } from './types'
-import { DOC_META, computeTotals, nextDocNumber } from './utils/docs'
+import { DOC_META, computeTotals, dueRecurringExpenses, nextDocNumber } from './utils/docs'
 import { todayISO, uid } from './utils/format'
 
 // Data saved before accounts existed; handed to the first account that signs in on this device.
@@ -83,6 +83,13 @@ export function StoreProvider({ user, children, loading }: { user: User; childre
 
   const { ready, sync } = useCloudSync(user.uid, data, setData)
 
+  // Fixed monthly expenses: create this month's copy once its day arrives (waits for approval).
+  useEffect(() => {
+    if (!ready) return
+    const due = dueRecurringExpenses(data.expenseTypes, data.expenses, todayISO())
+    if (due.length) setData((p) => ({ ...p, expenses: [...p.expenses, ...dueRecurringExpenses(p.expenseTypes, p.expenses, todayISO())] }))
+  }, [ready, data.expenseTypes, data.expenses, setData])
+
   useEffect(() => {
     if (!ready) return
     try {
@@ -152,10 +159,19 @@ export function StoreProvider({ user, children, loading }: { user: User; childre
       deleteDraft: (id) => setData((p) => ({ ...p, docs: p.docs.filter((d) => !(d.id === id && d.status === 'draft')) })),
       setDocClosed: (id, closed) => setData((p) => ({ ...p, docs: p.docs.map((d) => (d.id === id ? { ...d, closed } : d)) })),
       upsertExpense: (e) =>
-        setData((p) => ({
-          ...p,
-          expenses: p.expenses.some((x) => x.id === e.id) ? p.expenses.map((x) => (x.id === e.id ? e : x)) : [...p.expenses, e],
-        })),
+        setData((p) => {
+          const name = e.supplier.trim()
+          // Suppliers fill in by themselves from approved expenses.
+          const suppliers =
+            name && e.status !== 'pending' && !p.suppliers.some((s) => s.name === name)
+              ? [...p.suppliers, { id: uid(), name, taxId: '', phone: '', email: '', createdAt: new Date().toISOString() }]
+              : p.suppliers
+          return {
+            ...p,
+            suppliers,
+            expenses: p.expenses.some((x) => x.id === e.id) ? p.expenses.map((x) => (x.id === e.id ? e : x)) : [...p.expenses, e],
+          }
+        }),
       deleteExpense: (id) => setData((p) => ({ ...p, expenses: p.expenses.filter((e) => e.id !== id) })),
       upsert: (list, item) =>
         setData((p) => {

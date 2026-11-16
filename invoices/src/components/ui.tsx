@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
 import { back } from '../router'
 
 const PATHS: Record<string, ReactNode> = {
@@ -134,6 +134,12 @@ const PATHS: Record<string, ReactNode> = {
   upload: <path d="M12 16V5m0 0L7.5 9.5M12 5l4.5 4.5M5 19.5h14" />,
   'chevron-down': <path d="m7 10 5 5 5-5" />,
   bolt: <path d="M13 3 6 13.5h5L10.5 21 18 10.5h-5z" />,
+  calendar: (
+    <>
+      <rect x="4" y="5.5" width="16" height="14.5" rx="2.5" />
+      <path d="M4 10h16M8.5 3.5v4M15.5 3.5v4" />
+    </>
+  ),
   sliders: (
     <>
       <path d="M4 7h9M17 7h3M4 17h3M11 17h9" />
@@ -402,6 +408,10 @@ export function UnderlineTabs<T extends string>({
   options: { value: T; label: string }[]
   accent: string
 }) {
+  const activeRef = useRef<HTMLButtonElement>(null)
+  useEffect(() => {
+    activeRef.current?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+  }, [value])
   return (
     <div className="no-scrollbar flex gap-1 overflow-x-auto border-b border-line px-3" role="tablist">
       {options.map((o) => {
@@ -409,6 +419,7 @@ export function UnderlineTabs<T extends string>({
         return (
           <button
             key={o.value}
+            ref={active ? activeRef : undefined}
             role="tab"
             aria-selected={active}
             onClick={() => onChange(o.value)}
