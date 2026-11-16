@@ -2,14 +2,18 @@ import type { Business, Doc } from '../types'
 import { BUSINESS_TYPE_LABELS, DOC_META, computeTotals, docChargesVat, paymentLabel } from '../utils/docs'
 import { fmt, fmtDate, ils } from '../utils/format'
 
-export function PrintableDoc({ doc, business, relatedTitle }: { doc: Doc; business: Business; relatedTitle?: string }) {
+export function PrintableDoc({ doc, business, relatedTitle, flat = false }: { doc: Doc; business: Business; relatedTitle?: string; flat?: boolean }) {
   const meta = DOC_META[doc.type]
   const t = computeTotals(doc)
   const vat = docChargesVat(doc.type, business.type) && meta.hasItems
   const draft = doc.status === 'draft'
 
   return (
-    <article className="print-sheet relative mx-auto max-w-[800px] overflow-hidden rounded-3xl bg-white p-6 text-[13px] leading-relaxed text-ink shadow-sm sm:p-10">
+    <article
+      className={`print-sheet relative mx-auto overflow-hidden bg-white text-[13px] leading-relaxed text-ink ${
+        flat ? 'w-[794px] p-12' : 'max-w-[800px] rounded-3xl p-6 shadow-sm sm:p-10'
+      }`}
+    >
       {draft && (
         <div className="pointer-events-none absolute inset-0 grid place-items-center text-7xl font-black text-ink/5 -rotate-12">טיוטה</div>
       )}
