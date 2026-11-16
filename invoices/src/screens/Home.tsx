@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { DocRow } from '../components/DocRow'
+import { InstallCard } from '../install'
 import { ActionTile, Card, Icon, Segmented, Sheet } from '../components/ui'
 import { go } from '../router'
 import { useStore } from '../store'
@@ -58,6 +59,8 @@ export function Home() {
       <h1 className="px-5 pt-4 text-3xl font-semibold text-ink">
         {greeting()} {business.ownerName.split(' ')[0]}
       </h1>
+
+      <InstallCard />
 
       <div className="no-scrollbar mt-6 flex snap-x gap-3 overflow-x-auto px-5 pb-2">
         <button onClick={() => go('/income?tab=open')} className="flex min-h-40 w-[72%] max-w-72 shrink-0 snap-start flex-col justify-between rounded-3xl bg-lime p-5 text-right">

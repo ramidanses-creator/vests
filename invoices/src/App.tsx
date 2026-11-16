@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { NewDocSheet } from './components/NewDocSheet'
 import { Icon, Logo } from './components/ui'
 import { auth } from './firebase'
+import { InstallHelp, useInstall } from './install'
 import { go, replace, useRoute } from './router'
 import { useStore } from './store'
 import { CustomerPage } from './screens/Customers'
@@ -50,6 +51,12 @@ export default function App() {
     setMenuOpen(false)
     setNewOpen(false)
   }
+
+  // Home-screen shortcut "מסמך חדש" opens the new-document sheet.
+  const wantsNew = root === '' && query.get('new') === '1'
+  useEffect(() => {
+    if (wantsNew) setNewOpen(true)
+  }, [wantsNew])
 
   if (!data.business.name) return <Settings onboarding />
   if (legacy) return null
@@ -163,6 +170,7 @@ export default function App() {
 
 function SideMenu({ onClose }: { onClose: () => void }) {
   const { data, user } = useStore()
+  const { installed, install, help, closeHelp } = useInstall()
   const nav = (path: string) => {
     onClose()
     go(path)
@@ -197,7 +205,14 @@ function SideMenu({ onClose }: { onClose: () => void }) {
               {i.label}
             </button>
           ))}
+          {!installed && (
+            <button onClick={install} className="mt-2 flex w-full items-center gap-3 rounded-xl bg-lime px-3 py-3 text-right text-base font-medium">
+              <Icon name="download" />
+              הוספה למסך הבית
+            </button>
+          )}
         </nav>
+        <InstallHelp open={help} onClose={closeHelp} />
         <button
           onClick={() => {
             if (confirm('להתנתק מהחשבון?')) void signOut(auth)
