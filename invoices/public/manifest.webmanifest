@@ -1,0 +1,14 @@
+{
+  "name": "פנקס — קבלות וחשבוניות",
+  "short_name": "פנקס",
+  "description": "הפקת קבלות, חשבוניות מס ומעקב הוצאות",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f4f6fa",
+  "theme_color": "#cdf67c",
+  "dir": "rtl",
+  "lang": "he",
+  "icons": [{ "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}
