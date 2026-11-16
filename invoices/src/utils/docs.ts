@@ -1,4 +1,4 @@
-import type { BusinessType, Doc, DocType, Expense, PaymentMethod } from '../types'
+import type { BusinessType, Doc, DocType, Expense, LineItem, PaymentMethod } from '../types'
 import { round2 } from './format'
 
 interface DocMeta {
@@ -157,4 +157,37 @@ export const EXPENSE_CATEGORIES = [
 export function docTitle(doc: Doc): string {
   const label = DOC_META[doc.type].label
   return doc.status === 'issued' ? `${label} ${doc.number}` : `${label} (טיוטה)`
+}
+
+/** Document types on which a deposit can be requested. */
+export const DEPOSIT_DOC_TYPES: DocType[] = ['quote', 'deal_invoice', 'tax_invoice']
+
+/** What records a deposit: an exempt business issues a receipt; a VAT-registered one owes VAT on it, so a tax invoice/receipt. */
+export const depositDocType = (bt: BusinessType): DocType => (bt === 'exempt' ? 'receipt' : 'tax_invoice_receipt')
+
+export function depositDocs(docs: Doc[], doc: Doc): Doc[] {
+  return docs.filter((d) => d.status === 'issued' && d.isDeposit && d.relatedDocId === doc.id)
+}
+
+export function depositStatus(docs: Doc[], doc: Doc) {
+  const required = round2(doc.depositAmount ?? 0)
+  const paid = round2(depositDocs(docs, doc).reduce((s, d) => s + computeTotals(d).total, 0))
+  return { required, paid, remaining: round2(Math.max(0, required - paid)) }
+}
+
+/**
+ * Negative lines that subtract deposits already paid against `source`, priced the
+ * same way as the document they go on (with or without VAT).
+ */
+export function depositDeductionLines(
+  docs: Doc[],
+  source: Doc,
+  target: { pricesIncludeVat: boolean; vatRate: number },
+  newId: () => string,
+): LineItem[] {
+  return depositDocs(docs, source).map((d) => {
+    const total = computeTotals(d).total
+    const price = target.pricesIncludeVat || !target.vatRate ? total : round2(total / (1 + target.vatRate / 100))
+    return { id: newId(), description: `בניכוי מקדמה ששולמה (${DOC_META[d.type].label} ${d.number})`, quantity: 1, unitPrice: -price }
+  })
 }

@@ -4,7 +4,9 @@ import {
   doc,
   getDoc,
   getDocs,
+  getDocsFromCache,
   onSnapshot,
+  type QuerySnapshot,
   setDoc,
   writeBatch,
   type DocumentData,
@@ -94,6 +96,7 @@ function errorMessage(err: unknown): string {
 }
 
 const MAX_FILE_BYTES = 700 * 1024
+const INITIAL_LOAD_TIMEOUT_MS = 6000
 
 async function blobToBase64(blob: Blob): Promise<string> {
   const buf = new Uint8Array(await blob.arrayBuffer())
@@ -137,19 +140,29 @@ export function useCloudSync(uid: string, data: AppData, setData: (fn: (p: AppDa
     currentUid = uid
     let unsub: (() => void) | undefined
     let cancelled = false
-    getDocs(entityCol(uid))
+    // Don't hold the app on the splash screen when the network is slow or missing:
+    // after a few seconds start from what's on the device; the live listener below
+    // brings in the cloud data whenever it arrives.
+    const timeout = new Promise<null>((res) => setTimeout(() => res(null), INITIAL_LOAD_TIMEOUT_MS))
+    Promise.race([getDocs(entityCol(uid)), timeout])
+      .then((snap): Promise<QuerySnapshot | null> | QuerySnapshot =>
+        snap ?? getDocsFromCache(entityCol(uid)).catch(() => null),
+      )
       .then((snap) => {
         if (cancelled) return
         const remote = new Map<string, Entity>()
-        snap.forEach((d) => remote.set(d.id, d.data() as Entity))
+        snap?.forEach((d) => remote.set(d.id, d.data() as Entity))
+        const fromServer = !!snap && !snap.metadata.fromCache
         synced.current = new Map([...remote].map(([k, v]) => [k, stableStringify(v.data)]))
         setData((local) => mergeInitial(local, remote))
         setReady(true)
-        setSync({ status: navigator.onLine ? 'synced' : 'offline', lastSyncedAt: Date.now() })
+        setSync(fromServer ? { status: 'synced', lastSyncedAt: Date.now() } : { status: 'offline' })
 
         unsub = onSnapshot(
           entityCol(uid),
           (live) => {
+            if (!live.metadata.fromCache && pending.current === 0)
+              setSync((s) => (s.status === 'error' ? s : { status: 'synced', lastSyncedAt: Date.now() }))
             for (const change of live.docChanges()) {
               // Our own writes echo back first with pending writes — the state already has them.
               if (change.doc.metadata.hasPendingWrites) continue

@@ -5,7 +5,7 @@ import { Card, Icon, TopBar } from '../components/ui'
 import { go, useRoute } from '../router'
 import { useStore } from '../store'
 import type { DocType } from '../types'
-import { DOC_META, computeTotals, docTitle, isOpen } from '../utils/docs'
+import { DOC_META, computeTotals, depositDocType, depositStatus, docTitle, isOpen } from '../utils/docs'
 import { ils } from '../utils/format'
 
 export function DocumentView({ id }: { id?: string }) {
@@ -33,6 +33,11 @@ export function DocumentView({ id }: { id?: string }) {
 
   const followUps: { label: string; icon: string; tone: string; to: string }[] = []
   const from = (type: DocType, how = '') => `/new/${type}?from=${doc.id}${how ? `&how=${how}` : ''}`
+  const deposit = doc.depositAmount && doc.status === 'issued' ? depositStatus(data.docs, doc) : null
+  if (deposit && deposit.remaining > 0) {
+    const dt = depositDocType(business.type)
+    followUps.push({ label: `קיבלתי מקדמה — הפקת ${DOC_META[dt].label}`, icon: 'coins', tone: 'bg-lime', to: from(dt, 'deposit') })
+  }
   if (isOpen(doc)) {
     if (doc.type === 'deal_invoice' && !exempt) followUps.push({ label: 'קיבלתי תשלום — הפקת חשבונית מס/קבלה', icon: 'coins', tone: 'bg-lime', to: from('tax_invoice_receipt') })
     else followUps.push({ label: 'קיבלתי תשלום — הפקת קבלה', icon: 'coins', tone: 'bg-lime', to: from('receipt') })
@@ -71,6 +76,25 @@ export function DocumentView({ id }: { id?: string }) {
       </div>
 
       <div className="no-print mx-4 mt-4 space-y-3">
+        {deposit && (
+          <Card>
+            <h2 className="mb-2 font-bold">מקדמה</h2>
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <div className="rounded-xl bg-mist p-2">
+                <p className="text-xs text-ink-soft">נדרשת</p>
+                <p className="font-semibold">{ils(deposit.required)}</p>
+              </div>
+              <div className="rounded-xl bg-lime p-2">
+                <p className="text-xs">התקבלה</p>
+                <p className="font-semibold">{ils(deposit.paid)}</p>
+              </div>
+              <div className={`rounded-xl p-2 ${deposit.remaining > 0 ? 'bg-peach' : 'bg-mist'}`}>
+                <p className="text-xs text-ink-soft">חסר</p>
+                <p className="font-semibold">{ils(deposit.remaining)}</p>
+              </div>
+            </div>
+          </Card>
+        )}
         {DOC_META[doc.type].awaitsPayment && doc.status === 'issued' && (
           <Card className="flex items-center justify-between">
             <div>

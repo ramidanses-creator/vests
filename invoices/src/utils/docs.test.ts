@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Doc } from '../types'
-import { computeTotals, incomeOf, isOpen, needsAllocation, nextDocNumber } from './docs'
+import { computeTotals, depositDeductionLines, depositStatus, incomeOf, isOpen, needsAllocation, nextDocNumber } from './docs'
 
 function makeDoc(over: Partial<Doc> = {}): Doc {
   return {
@@ -92,5 +92,37 @@ describe('income and open balances', () => {
     expect(isOpen(makeDoc())).toBe(true)
     expect(isOpen(makeDoc({ closed: true }))).toBe(false)
     expect(isOpen(makeDoc({ type: 'quote' }))).toBe(false)
+  })
+})
+
+describe('deposits', () => {
+  const quote = makeDoc({ id: 'q', type: 'quote', depositAmount: 6000, items: [{ id: 'i', description: 'x', quantity: 1, unitPrice: 20000 }], pricesIncludeVat: true })
+  const paid = makeDoc({
+    id: 'r',
+    type: 'tax_invoice_receipt',
+    isDeposit: true,
+    relatedDocId: 'q',
+    number: 5,
+    pricesIncludeVat: true,
+    items: [{ id: 'i', description: 'מקדמה', quantity: 1, unitPrice: 4000 }],
+  })
+
+  it('tracks how much of the deposit was paid', () => {
+    expect(depositStatus([quote, paid], quote)).toEqual({ required: 6000, paid: 4000, remaining: 2000 })
+  })
+
+  it('subtracts paid deposits on the final bill, matching its VAT mode', () => {
+    const withVat = depositDeductionLines([quote, paid], quote, { pricesIncludeVat: true, vatRate: 18 }, () => 'n')
+    expect(withVat).toHaveLength(1)
+    expect(withVat[0].unitPrice).toBe(-4000)
+    expect(withVat[0].description).toContain('חשבונית מס/קבלה 5')
+    const beforeVat = depositDeductionLines([quote, paid], quote, { pricesIncludeVat: false, vatRate: 18 }, () => 'n')
+    expect(beforeVat[0].unitPrice).toBe(-3389.83)
+  })
+
+  it('ignores ordinary payments and drafts', () => {
+    const draft = { ...paid, id: 'd', status: 'draft' as const }
+    const normal = { ...paid, id: 'p', isDeposit: false }
+    expect(depositStatus([quote, draft, normal], quote).paid).toBe(0)
   })
 })

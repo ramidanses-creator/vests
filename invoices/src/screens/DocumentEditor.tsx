@@ -8,7 +8,10 @@ import {
   DOC_META,
   PAYMENT_METHODS,
   allowedDocTypes,
+  DEPOSIT_DOC_TYPES,
   computeTotals,
+  depositDeductionLines,
+  depositStatus,
   docChargesVat,
   docTitle,
   needsAllocation,
@@ -54,6 +57,14 @@ function buildInitial(props: Props, docs: Doc[], data: ReturnType<typeof useStor
     const ft = computeTotals(from)
     if (how === 'duplicate') {
       doc = { ...structuredClone(from), id: uid(), status: 'draft', number: undefined, issuedAt: undefined, date: todayISO(), payments: [], relatedDocId: undefined, closed: false, allocationNumber: '', createdAt: new Date().toISOString() }
+    } else if (how === 'deposit') {
+      const { remaining } = depositStatus(docs, from)
+      const label = `מקדמה עבור ${docTitle(from)}`
+      doc = { ...doc, ...base, isDeposit: true, description: label }
+      if (DOC_META[type].hasItems) {
+        doc.items = [{ id: uid(), description: label, quantity: 1, unitPrice: remaining }]
+        doc.pricesIncludeVat = true
+      } else doc.payments = [newPayment(remaining)]
     } else if (type === 'receipt') {
       const paidBefore = docs
         .filter((d) => d.status === 'issued' && d.relatedDocId === from.id)
@@ -69,6 +80,8 @@ function buildInitial(props: Props, docs: Doc[], data: ReturnType<typeof useStor
         description: type === 'credit_invoice' ? `זיכוי עבור ${docTitle(from)}` : from.description,
         notes: from.notes,
       }
+      // Final bill after a deposit: subtract what was already paid up front.
+      if (type !== 'credit_invoice') doc.items = [...doc.items, ...depositDeductionLines(docs, from, doc, uid)]
     }
   }
 
@@ -332,6 +345,30 @@ export function DocumentEditor(props: Props) {
             <Field label="תיאור כללי (יופיע בראש המסמך)">
               <input value={doc.description} onChange={(e) => update({ description: e.target.value })} className={inputCls} />
             </Field>
+          )}
+          {DEPOSIT_DOC_TYPES.includes(doc.type) && (
+            <div className="space-y-2 rounded-2xl bg-lime/50 p-3">
+              <Field label="מקדמה נדרשת (₪, כולל מע״מ)" hint={doc.depositAmount ? `יתרה אחרי המקדמה: ${ils(Math.max(0, totals.total - doc.depositAmount))}` : 'אופציונלי — יופיע על המסמך שהלקוח מקבל'}>
+                <NumberInput value={doc.depositAmount ?? 0} onChange={(v) => update({ depositAmount: v > 0 ? round2(v) : undefined })} />
+              </Field>
+              <div className="flex gap-2">
+                {[30, 50].map((pct) => (
+                  <button
+                    key={pct}
+                    type="button"
+                    onClick={() => update({ depositAmount: round2((totals.total * pct) / 100) || undefined })}
+                    className="rounded-lg bg-white px-3 py-1.5 text-sm font-medium"
+                  >
+                    {pct}%
+                  </button>
+                ))}
+                {doc.depositAmount ? (
+                  <button type="button" onClick={() => update({ depositAmount: undefined })} className="px-2 text-sm text-ink-soft underline">
+                    ללא מקדמה
+                  </button>
+                ) : null}
+              </div>
+            </div>
           )}
           <Field label="הערות (יופיעו בתחתית המסמך)">
             <textarea value={doc.notes} onChange={(e) => update({ notes: e.target.value })} rows={2} className={inputCls} />
