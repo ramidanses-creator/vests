@@ -3,7 +3,7 @@ import { CustomerField } from '../components/CustomerField'
 import { Button, Card, Field, Icon, NumberInput, Radio, Sheet, TopBar, Toggle, inputCls } from '../components/ui'
 import { back, replace } from '../router'
 import { emptyDoc, useStore } from '../store'
-import type { Doc, DocType, LineItem, Payment, PaymentMethod } from '../types'
+import type { CatalogItem, Doc, DocType, LineItem, Payment, PaymentMethod } from '../types'
 import {
   DOC_META,
   PAYMENT_METHODS,
@@ -166,7 +166,7 @@ export function DocumentEditor(props: Props) {
 
   function handleSaveDraft() {
     saveDraft(finalDoc())
-    back('/docs')
+    back('/income')
   }
 
   function handleIssueClick() {
@@ -196,7 +196,7 @@ export function DocumentEditor(props: Props) {
               onClick={() => {
                 if (confirm('למחוק את הטיוטה?')) {
                   deleteDraft(doc.id)
-                  back('/docs')
+                  back('/income')
                 }
               }}
               className="grid h-10 w-10 place-items-center rounded-full hover:bg-white/10"
@@ -254,12 +254,10 @@ export function DocumentEditor(props: Props) {
                     image={item.image}
                     onChange={(image) => updateItem(item.id, { image })}
                   />
-                  <input
+                  <ItemDescriptionInput
                     value={item.description}
-                    onChange={(e) => updateItem(item.id, { description: e.target.value })}
-                    placeholder="תיאור הפריט / השירות"
-                    className={inputCls}
-                    aria-label="תיאור"
+                    onChange={(description) => updateItem(item.id, { description })}
+                    onPick={(c) => updateItem(item.id, { description: c.name, unitPrice: c.price, image: c.image ?? item.image })}
                   />
                   {doc.items.length > 1 && (
                     <button
@@ -616,6 +614,55 @@ function ItemImageButton({ index, image, onChange }: { index: number; image?: st
         </div>
       )}
       <input ref={input} type="file" accept="image/*" onChange={pick} className="hidden" />
+    </div>
+  )
+}
+
+/** Item description with suggestions from the saved items catalog. */
+function ItemDescriptionInput({ value, onChange, onPick }: { value: string; onChange: (v: string) => void; onPick: (c: CatalogItem) => void }) {
+  const { data } = useStore()
+  const [focused, setFocused] = useState(false)
+  const q = value.trim()
+  const matches = data.items.filter((c) => !q || (c.name.includes(q) && c.name !== q)).slice(0, 6)
+  return (
+    <div className="relative min-w-0 flex-1">
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onFocus={(e) => {
+          setFocused(true)
+          // Make room for the suggestions above the totals bar at the bottom.
+          if (data.items.length) e.currentTarget.scrollIntoView({ block: 'start', behavior: 'smooth' })
+        }}
+        onBlur={() => setTimeout(() => setFocused(false), 150)}
+        style={{ scrollMarginTop: 90 }}
+        placeholder={data.items.length ? 'תיאור, או בחירה מהפריטים' : 'תיאור הפריט / השירות'}
+        className={inputCls}
+        aria-label="תיאור"
+        autoComplete="off"
+      />
+      {focused && matches.length > 0 && (
+        <div className="absolute inset-x-0 top-full z-20 mt-1 max-h-72 overflow-y-auto rounded-xl border border-line bg-white shadow-lg">
+          {matches.map((c) => (
+            <button
+              key={c.id}
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => {
+                onPick(c)
+                setFocused(false)
+              }}
+              className="flex w-full items-center gap-3 px-3 py-2.5 text-right hover:bg-mist"
+            >
+              <span className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-lg bg-lavender">
+                {c.image ? <img src={c.image} alt="" className="h-full w-full object-cover" /> : <Icon name="receipt" size={16} />}
+              </span>
+              <span className="min-w-0 flex-1 truncate">{c.name}</span>
+              <span className="text-sm font-medium">{ils(c.price)}</span>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

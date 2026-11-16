@@ -1,37 +1,41 @@
 import { useMemo, useState } from 'react'
 import { DocRow } from '../components/DocRow'
-import { Card, EmptyState, Icon, Segmented, inputCls } from '../components/ui'
-import { replace } from '../router'
+import { Button, Card, EmptyState, Icon, inputCls } from '../components/ui'
 import { useStore } from '../store'
 import type { Doc } from '../types'
-import { DOC_META, computeTotals, isOpen } from '../utils/docs'
+import { DOC_META, computeTotals } from '../utils/docs'
 import { monthLabel } from '../utils/format'
 
-const TABS = [
-  { value: 'all', label: 'הכל' },
-  { value: 'income', label: 'מסמכי הכנסות' },
-  { value: 'open', label: 'פתוחים' },
-  { value: 'drafts', label: 'טיוטות' },
-  { value: 'ops', label: 'ניהול שוטף' },
-]
-
-const FILTERS: Record<string, (d: Doc) => boolean> = {
-  all: (d) => d.status === 'issued',
-  income: (d) => d.status === 'issued' && DOC_META[d.type].group === 'income',
-  open: isOpen,
-  drafts: (d) => d.status === 'draft',
-  ops: (d) => d.status === 'issued' && DOC_META[d.type].group === 'ops',
+export function SearchBox({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder: string }) {
+  return (
+    <div className="relative">
+      <Icon name="search" size={20} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-ink-soft" />
+      <input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className={`${inputCls} pr-11`} />
+    </div>
+  )
 }
 
-export function Documents({ tab }: { tab: string }) {
+/** Searchable list of documents, grouped by month. */
+export function DocList({
+  filter,
+  emptyTitle,
+  emptyText,
+  onCreate,
+  createLabel,
+}: {
+  filter: (d: Doc) => boolean
+  emptyTitle: string
+  emptyText: string
+  onCreate?: () => void
+  createLabel?: string
+}) {
   const { data } = useStore()
   const [q, setQ] = useState('')
-  const current = FILTERS[tab] ? tab : 'all'
 
+  const all = useMemo(() => data.docs.filter(filter), [data.docs, filter])
   const groups = useMemo(() => {
     const query = q.trim()
-    const list = data.docs
-      .filter(FILTERS[current])
+    const list = all
       .filter(
         (d) =>
           !query ||
@@ -42,40 +46,42 @@ export function Documents({ tab }: { tab: string }) {
       )
       .sort((a, b) => b.date.localeCompare(a.date) || (b.number ?? 0) - (a.number ?? 0))
     const map = new Map<string, Doc[]>()
-    for (const d of list) {
-      const key = d.date.slice(0, 7)
-      map.set(key, [...(map.get(key) ?? []), d])
-    }
+    for (const d of list) map.set(d.date.slice(0, 7), [...(map.get(d.date.slice(0, 7)) ?? []), d])
     return [...map.entries()]
-  }, [data.docs, current, q])
+  }, [all, q])
+
+  if (all.length === 0) {
+    return (
+      <EmptyState
+        icon="doc"
+        title={emptyTitle}
+        text={emptyText}
+        action={
+          onCreate && (
+            <Button onClick={onCreate} className="mt-2 !rounded-full !bg-mint px-8">
+              {createLabel}
+            </Button>
+          )
+        }
+      />
+    )
+  }
 
   return (
-    <div className="pb-36">
-      <header className="px-5 pt-[max(env(safe-area-inset-top),20px)]">
-        <h1 className="text-3xl font-semibold">מסמכים</h1>
-        <div className="relative mt-4">
-          <Icon name="search" size={20} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-ink-soft" />
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="חיפוש לפי לקוח, מספר או סכום" className={`${inputCls} pr-11`} />
-        </div>
-        <div className="mt-3">
-          <Segmented value={current} onChange={(v) => replace(`/docs?tab=${v}`)} options={TABS} />
-        </div>
-      </header>
-
-      <div className="mt-4 space-y-4 px-5">
-        {groups.length === 0 ? (
-          <EmptyState icon="doc" title={q ? 'לא נמצאו מסמכים' : 'אין כאן מסמכים עדיין'} text="לחצו על + כדי להפיק קבלה, חשבונית או הצעת מחיר." />
-        ) : (
-          groups.map(([month, docs]) => (
-            <Card key={month} className="!p-3">
-              <h2 className="px-2 pb-1 pt-1 text-sm font-semibold text-ink-soft">{monthLabel(month)}</h2>
-              {docs.map((d) => (
-                <DocRow key={d.id} doc={d} />
-              ))}
-            </Card>
-          ))
-        )}
-      </div>
+    <div className="space-y-4 px-4 pt-4">
+      <SearchBox value={q} onChange={setQ} placeholder="חיפוש לפי לקוח, מספר או סכום" />
+      {groups.length === 0 ? (
+        <p className="py-8 text-center text-ink-soft">לא נמצאו מסמכים בחיפוש הזה.</p>
+      ) : (
+        groups.map(([month, docs]) => (
+          <Card key={month} className="!p-3">
+            <h2 className="px-2 pb-1 pt-1 text-sm font-semibold text-ink-soft">{monthLabel(month)}</h2>
+            {docs.map((d) => (
+              <DocRow key={d.id} doc={d} />
+            ))}
+          </Card>
+        ))
+      )}
     </div>
   )
 }

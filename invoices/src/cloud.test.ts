@@ -6,10 +6,13 @@ const { applyEntity, mergeInitial, stableStringify, toEntities } = await import(
 import type { AppData } from './types'
 
 const base: AppData = {
-  business: { name: 'עסק', ownerName: '', type: 'licensed', taxId: '1', address: '', phone: '', email: '', vatRate: 18, allocationThreshold: 5000, accountantEmail: '', footerNote: '', startNumbers: {} },
+  business: { name: 'עסק', ownerName: '', type: 'licensed', taxId: '1', address: '', phone: '', email: '', vatRate: 18, allocationThreshold: 5000, accountantEmail: '', footerNote: '', startNumbers: {}, vatPeriod: 'bimonthly', incomeTaxAdvanceRate: 0 },
   customers: [{ id: 'a', name: 'א', taxId: '', phone: '', email: '', address: '', createdAt: '' }],
   docs: [],
   expenses: [],
+  items: [],
+  suppliers: [],
+  expenseTypes: [],
 }
 
 describe('stableStringify', () => {
@@ -31,6 +34,13 @@ describe('sync helpers', () => {
     const local = { ...base, customers: [...base.customers, { ...base.customers[0], id: 'z', name: 'מקומי' }] }
     const merged = mergeInitial(local, remote)
     expect(merged.customers.map((c) => c.name).sort()).toEqual(['ב', 'מהענן', 'מקומי'].sort())
+  })
+
+  it('round-trips the newer lists (items, suppliers, expense types)', () => {
+    const withItem = applyEntity(base, 'i_x', { kind: 'item', data: { id: 'x', name: 'וסט', price: 89, createdAt: '' } })
+    expect(withItem.items.map((i) => i.name)).toEqual(['וסט'])
+    expect([...toEntities(withItem).keys()]).toContain('i_x')
+    expect(applyEntity(withItem, 'i_x', null).items).toEqual([])
   })
 
   it('removes an entity deleted on another device', () => {

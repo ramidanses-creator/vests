@@ -34,6 +34,10 @@ export interface Business {
   accountantEmail: string
   footerNote: string
   startNumbers: Partial<Record<DocType, number>>
+  /** How often VAT and income-tax advances are reported. */
+  vatPeriod: 'monthly' | 'bimonthly'
+  /** Income-tax advance rate (% of turnover) set by the Tax Authority. */
+  incomeTaxAdvanceRate: number
 }
 
 export interface CustomerDetails {
@@ -97,8 +101,15 @@ export interface Doc {
   createdAt: string
 }
 
+export type ExpenseStatus = 'pending' | 'approved'
+
 export interface Expense {
   id: string
+  /** Uploaded expenses wait for approval; only approved ones count in reports. Missing = approved (older data). */
+  status?: ExpenseStatus
+  /** Created automatically from a recurring expense type for this month (YYYY-MM). */
+  recurringTypeId?: string
+  recurringMonth?: string
   date: string
   supplier: string
   description: string
@@ -110,9 +121,43 @@ export interface Expense {
   createdAt: string
 }
 
+/** A product or service kept for quick reuse on documents. */
+export interface CatalogItem {
+  id: string
+  name: string
+  price: number
+  image?: string
+  createdAt: string
+}
+
+export interface Supplier {
+  id: string
+  name: string
+  taxId: string
+  phone: string
+  email: string
+  createdAt: string
+}
+
+/** A user-defined expense category, optionally a fixed monthly expense created automatically. */
+export interface ExpenseType {
+  id: string
+  name: string
+  recurring: boolean
+  monthlyAmount: number
+  dayOfMonth: number
+  supplier: string
+  createdAt: string
+}
+
 export interface AppData {
   business: Business
   customers: Customer[]
   docs: Doc[]
   expenses: Expense[]
+  items: CatalogItem[]
+  suppliers: Supplier[]
+  expenseTypes: ExpenseType[]
 }
+
+export type ListKey = 'customers' | 'expenses' | 'items' | 'suppliers' | 'expenseTypes'
