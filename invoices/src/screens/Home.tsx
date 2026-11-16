@@ -3,7 +3,7 @@ import { DocRow } from '../components/DocRow'
 import { ActionTile, Card, Icon, Segmented, Sheet } from '../components/ui'
 import { go } from '../router'
 import { useStore } from '../store'
-import { computeTotals, expenseNet, incomeOf, inRange, isOpen, receivedOf } from '../utils/docs'
+import { computeTotals, expenseNet, incomeOf, inRange, isApproved, isOpen, receivedOf } from '../utils/docs'
 import { greeting, ils, localISO, todayISO } from '../utils/format'
 
 type Period = 'week' | 'month' | 'year'
@@ -40,7 +40,7 @@ export function Home() {
     const from = periodStart(period)
     const income = docs.filter((d) => inRange(d.date, from, today)).reduce((s, d) => s + incomeOf(d, business.type), 0)
     const spent = expenses
-      .filter((e) => inRange(e.date, from, today))
+      .filter((e) => isApproved(e) && inRange(e.date, from, today))
       .reduce((s, e) => s + (business.type === 'exempt' ? e.amount : expenseNet(e)), 0)
     return { income, spent }
   }, [docs, expenses, period, today, business.type])

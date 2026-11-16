@@ -64,7 +64,7 @@ export default function App() {
       screen = <Ops tab={query.get('tab') ?? 'docs'} month={query.get('m') ?? undefined} onNewDoc={openNew} />
       break
     case 'expenses':
-      screen = <Expenses autoAdd={query.get('add') === '1'} />
+      screen = <Expenses tab={query.get('tab') ?? 'pending'} autoAdd={query.get('add') === '1'} />
       break
     case 'sales':
       screen = <Sales />

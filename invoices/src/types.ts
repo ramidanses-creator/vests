@@ -101,7 +101,8 @@ export interface Doc {
   createdAt: string
 }
 
-export type ExpenseStatus = 'pending' | 'approved'
+/** `skipped`: a fixed monthly expense the user removed for that month (kept so it isn't recreated). */
+export type ExpenseStatus = 'pending' | 'approved' | 'skipped'
 
 export interface Expense {
   id: string

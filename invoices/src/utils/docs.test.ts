@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Doc } from '../types'
-import { computeTotals, depositDeductionLines, depositStatus, incomeOf, isOpen, needsAllocation, nextDocNumber } from './docs'
+import { computeTotals, depositDeductionLines, dueRecurringExpenses, expenseCategories, depositStatus, incomeOf, isOpen, needsAllocation, nextDocNumber } from './docs'
 
 function makeDoc(over: Partial<Doc> = {}): Doc {
   return {
@@ -124,5 +124,29 @@ describe('deposits', () => {
     const draft = { ...paid, id: 'd', status: 'draft' as const }
     const normal = { ...paid, id: 'p', isDeposit: false }
     expect(depositStatus([quote, draft, normal], quote).paid).toBe(0)
+  })
+})
+
+describe('expense types', () => {
+  const rent = { id: 't1', name: 'שכירות', recurring: true, monthlyAmount: 3000, dayOfMonth: 10, supplier: 'בעל הבית', createdAt: '' }
+  it('creates a fixed monthly expense once its day has come', () => {
+    expect(dueRecurringExpenses([rent], [], '2026-11-09')).toEqual([])
+    const due = dueRecurringExpenses([rent], [], '2026-11-10')
+    expect(due).toHaveLength(1)
+    expect(due[0]).toMatchObject({ id: 'rec_t1_2026-11', date: '2026-11-10', amount: 3000, status: 'pending', category: 'שכירות' })
+  })
+  it('does not create it twice in the same month', () => {
+    const [first] = dueRecurringExpenses([rent], [], '2026-11-12')
+    expect(dueRecurringExpenses([rent], [first], '2026-11-20')).toEqual([])
+    expect(dueRecurringExpenses([rent], [first], '2026-12-10')).toHaveLength(1)
+  })
+  it('does not bring back a month the user skipped', () => {
+    const [first] = dueRecurringExpenses([rent], [], '2026-11-12')
+    expect(dueRecurringExpenses([rent], [{ ...first, status: 'skipped' }], '2026-11-20')).toEqual([])
+  })
+  it('lists custom categories with the built-in ones', () => {
+    const cats = expenseCategories({ expenseTypes: [rent] })
+    expect(cats).toContain('שכירות')
+    expect(cats.at(-1)).toBe('אחר')
   })
 })
