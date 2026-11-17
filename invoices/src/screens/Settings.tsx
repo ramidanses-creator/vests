@@ -8,6 +8,8 @@ import { normalizeData, useStore } from '../store'
 import type { AppData, Business, BusinessType } from '../types'
 import { BUSINESS_TYPE_LABELS, DOC_META, allowedDocTypes } from '../utils/docs'
 import { compressImage, readAsDataUrl } from '../utils/fileStore'
+import { downloadFile } from '../utils/pdf'
+import { ResetCard, RestoreCard, backupFile } from './AccountReset'
 
 export function Settings({ onboarding = false }: { onboarding?: boolean }) {
   const { data, setBusiness, replaceAll, user, sync } = useStore()
@@ -40,13 +42,7 @@ export function Settings({ onboarding = false }: { onboarding?: boolean }) {
   }
 
   function exportBackup() {
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `pinkas-backup-${new Date().toISOString().slice(0, 10)}.json`
-    a.click()
-    URL.revokeObjectURL(url)
+    downloadFile(backupFile(data))
   }
 
   function importBackup(e: React.ChangeEvent<HTMLInputElement>) {
@@ -88,6 +84,7 @@ export function Settings({ onboarding = false }: { onboarding?: boolean }) {
       )}
 
       <div className={`space-y-3 px-4 ${onboarding ? '-mt-5' : ''}`}>
+        <RestoreCard />
         <Card className="space-y-4">
           <h2 className="text-lg font-bold">סוג העסק</h2>
           <div role="radiogroup">
@@ -241,6 +238,7 @@ export function Settings({ onboarding = false }: { onboarding?: boolean }) {
                   <input ref={importInput} type="file" accept="application/json" onChange={importBackup} className="hidden" />
                 </div>
               </Card>
+              <ResetCard />
             </div>
           </>
         )}

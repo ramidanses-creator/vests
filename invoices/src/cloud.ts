@@ -6,6 +6,8 @@ import {
   getDocs,
   getDocsFromCache,
   onSnapshot,
+  query,
+  where,
   type QuerySnapshot,
   setDoc,
   writeBatch,
@@ -145,6 +147,8 @@ export function useCloudSync(uid: string, data: AppData, setData: (fn: (p: AppDa
   const [ready, setReady] = useState(false)
   const [sync, setSync] = useState<SyncState>({ status: 'loading' })
   const pending = useRef(0)
+  // Set before a reset/restore: the data swap must not delete receipt files the archive still needs.
+  const keepFiles = useRef(false)
 
   useEffect(() => {
     currentUid = uid
@@ -209,6 +213,8 @@ export function useCloudSync(uid: string, data: AppData, setData: (fn: (p: AppDa
   // Push whatever differs from what the cloud holds.
   useEffect(() => {
     if (!ready) return
+    const keep = keepFiles.current
+    keepFiles.current = false
     const current = toEntities(data)
     const writes: { key: string; entity: Entity | null }[] = []
     const fileUploads: string[] = []
@@ -249,7 +255,7 @@ export function useCloudSync(uid: string, data: AppData, setData: (fn: (p: AppDa
       commits.push(batch.commit())
     }
     for (const f of fileUploads) commits.push(uploadFile(uid, f))
-    for (const f of fileDeletes) commits.push(deleteDoc(fileRef(uid, f)))
+    if (!keep) for (const f of fileDeletes) commits.push(deleteDoc(fileRef(uid, f)))
 
     pending.current++
     setSync((s) => ({ ...s, status: navigator.onLine ? 'saving' : 'offline' }))
@@ -275,5 +281,93 @@ export function useCloudSync(uid: string, data: AppData, setData: (fn: (p: AppDa
     }
   }, [])
 
-  return { ready, sync }
+  return { ready, sync, keepFilesOnNextSave: () => (keepFiles.current = true) }
+}
+
+// ---------- reset & restore: a full snapshot kept for 30 days ----------
+
+export const ARCHIVE_DAYS = 30
+const DAY = 24 * 60 * 60 * 1000
+const CHUNK_CHARS = 250_000 // keeps every Firestore document well under its 1 MB limit, even in Hebrew
+
+export interface ArchiveInfo {
+  id: string
+  createdAt: number
+  expiresAt: number
+  chunks: number
+  counts: { docs: number; customers: number; expenses: number }
+}
+
+const archiveCol = (uid: string) => collection(db, 'users', uid, 'pinkas_archive')
+
+function requireUid(): string {
+  if (!currentUid) throw new Error('not signed in')
+  return currentUid
+}
+
+/** Waits for the server to confirm, so nothing is wiped while the copy only exists on the phone. */
+function confirmed<T>(p: Promise<T>, ms = 30_000): Promise<T> {
+  return Promise.race([p, new Promise<T>((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))])
+}
+
+export async function createArchive(data: AppData): Promise<ArchiveInfo> {
+  const uid = requireUid()
+  const json = JSON.stringify(data)
+  const id = `a${Date.now()}`
+  const chunks = Math.max(1, Math.ceil(json.length / CHUNK_CHARS))
+  for (let i = 0; i < chunks; i++) {
+    await confirmed(setDoc(doc(archiveCol(uid), `${id}_${i}`), { kind: 'part', archiveId: id, index: i, part: json.slice(i * CHUNK_CHARS, (i + 1) * CHUNK_CHARS) }))
+  }
+  const now = Date.now()
+  const info: ArchiveInfo = {
+    id,
+    createdAt: now,
+    expiresAt: now + ARCHIVE_DAYS * DAY,
+    chunks,
+    counts: { docs: data.docs.filter((d) => d.status === 'issued').length, customers: data.customers.length, expenses: data.expenses.length },
+  }
+  // The summary goes last, so a half-written archive is never listed.
+  await confirmed(setDoc(doc(archiveCol(uid), id), { kind: 'meta', ...info }))
+  return info
+}
+
+export async function listArchives(): Promise<ArchiveInfo[]> {
+  const uid = requireUid()
+  const snap = await getDocs(query(archiveCol(uid), where('kind', '==', 'meta')))
+  return snap.docs.map((d) => d.data() as ArchiveInfo & { kind: string }).sort((a, b) => b.createdAt - a.createdAt)
+}
+
+export async function loadArchive(info: ArchiveInfo): Promise<AppData> {
+  const uid = requireUid()
+  const parts: string[] = []
+  for (let i = 0; i < info.chunks; i++) {
+    const snap = await getDoc(doc(archiveCol(uid), `${info.id}_${i}`))
+    if (!snap.exists()) throw new Error('archive incomplete')
+    parts.push((snap.data() as { part: string }).part)
+  }
+  return JSON.parse(parts.join('')) as AppData
+}
+
+export const fileIdsOf = (data: Pick<AppData, 'expenses'>) => new Set(data.expenses.map((e) => e.fileId).filter((f): f is string => !!f))
+
+/** Deletes an archive, and the receipt files only it still referred to. */
+export async function deleteArchive(info: ArchiveInfo, stillUsed: Set<string>): Promise<void> {
+  const uid = requireUid()
+  const archived = await loadArchive(info).catch(() => null)
+  if (archived) for (const f of fileIdsOf(archived)) if (!stillUsed.has(f)) await deleteDoc(fileRef(uid, f)).catch(() => {})
+  for (let i = 0; i < info.chunks; i++) await deleteDoc(doc(archiveCol(uid), `${info.id}_${i}`)).catch(() => {})
+  await deleteDoc(doc(archiveCol(uid), info.id))
+}
+
+/** Removes archives older than 30 days. Files still used now or by a newer archive are kept. */
+export async function purgeExpiredArchives(current: AppData): Promise<void> {
+  const all = await listArchives()
+  const expired = all.filter((a) => a.expiresAt < Date.now())
+  if (!expired.length) return
+  const used = fileIdsOf(current)
+  for (const a of all.filter((x) => x.expiresAt >= Date.now())) {
+    const d = await loadArchive(a).catch(() => null)
+    if (d) for (const f of fileIdsOf(d)) used.add(f)
+  }
+  for (const a of expired) await deleteArchive(a, used).catch(() => {})
 }
