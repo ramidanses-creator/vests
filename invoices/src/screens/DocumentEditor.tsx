@@ -15,6 +15,7 @@ import {
   docChargesVat,
   docTitle,
   needsAllocation,
+  withoutVatIfExempt,
 } from '../utils/docs'
 import { compressImage, readAsDataUrl } from '../utils/fileStore'
 import { fmt, ils, round2, todayISO, uid } from '../utils/format'
@@ -33,7 +34,7 @@ function buildInitial(props: Props, docs: Doc[], data: ReturnType<typeof useStor
   const { business, customers } = data
   if (props.mode === 'edit') {
     const d = docs.find((x) => x.id === props.param)
-    return d && d.status === 'draft' ? structuredClone(d) : null
+    return d && d.status === 'draft' ? withoutVatIfExempt(structuredClone(d), business.type) : null
   }
   const type = props.param as DocType
   if (!allowedDocTypes(business.type).includes(type)) return null
@@ -86,7 +87,7 @@ function buildInitial(props: Props, docs: Doc[], data: ReturnType<typeof useStor
   }
 
   if (DOC_META[type].hasPayments && doc.payments.length === 0) doc.payments = [newPayment()]
-  return doc
+  return withoutVatIfExempt(doc, business.type)
 }
 
 export function DocumentEditor(props: Props) {
@@ -139,7 +140,7 @@ export function DocumentEditor(props: Props) {
 
   /** The document as it will be stored, with auto-filled payment applied. */
   function finalDoc(): Doc {
-    let d = doc!
+    let d = withoutVatIfExempt(doc!, business.type)
     if (!meta.hasItems) d = { ...d, items: [] }
     if (!meta.hasPayments) d = { ...d, payments: [] }
     if (autoPay && d.payments.length === 1) d = { ...d, payments: [{ ...d.payments[0], amount: totals!.total }] }
@@ -346,7 +347,7 @@ export function DocumentEditor(props: Props) {
           )}
           {DEPOSIT_DOC_TYPES.includes(doc.type) && (
             <div className="space-y-2 rounded-2xl bg-lime/50 p-3">
-              <Field label="מקדמה נדרשת (₪, כולל מע״מ)" hint={doc.depositAmount ? `יתרה אחרי המקדמה: ${ils(Math.max(0, totals.total - doc.depositAmount))}` : 'אופציונלי — יופיע על המסמך שהלקוח מקבל'}>
+              <Field label={`מקדמה נדרשת (₪${chargesVat ? ', כולל מע״מ' : ''})`} hint={doc.depositAmount ? `יתרה אחרי המקדמה: ${ils(Math.max(0, totals.total - doc.depositAmount))}` : 'אופציונלי — יופיע על המסמך שהלקוח מקבל'}>
                 <NumberInput value={doc.depositAmount ?? 0} onChange={(v) => update({ depositAmount: v > 0 ? round2(v) : undefined })} />
               </Field>
               <div className="flex gap-2">

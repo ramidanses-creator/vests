@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Doc } from '../types'
-import { computeTotals, depositDeductionLines, dueRecurringExpenses, expenseCategories, depositStatus, incomeOf, isOpen, needsAllocation, nextDocNumber } from './docs'
+import { computeTotals, withoutVatIfExempt, depositDeductionLines, dueRecurringExpenses, expenseCategories, depositStatus, incomeOf, isOpen, needsAllocation, nextDocNumber } from './docs'
 
 function makeDoc(over: Partial<Doc> = {}): Doc {
   return {
@@ -148,5 +148,18 @@ describe('expense types', () => {
     const cats = expenseCategories({ expenseTypes: [rent] })
     expect(cats).toContain('שכירות')
     expect(cats.at(-1)).toBe('אחר')
+  })
+})
+
+describe('exempt business', () => {
+  it('drops VAT from a document made while the business was VAT-registered', () => {
+    const draft = makeDoc({ type: 'quote', status: 'draft', pricesIncludeVat: false, items: [{ id: 'i', description: 'x', quantity: 1, unitPrice: 100 }] })
+    expect(computeTotals(draft).total).toBe(118)
+    const fixed = withoutVatIfExempt(draft, 'exempt')
+    expect(computeTotals(fixed)).toMatchObject({ total: 100, vat: 0 })
+  })
+  it('leaves VAT alone for a VAT-registered business', () => {
+    const d = makeDoc({ pricesIncludeVat: false })
+    expect(withoutVatIfExempt(d, 'licensed')).toBe(d)
   })
 })
