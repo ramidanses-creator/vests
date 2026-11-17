@@ -45,6 +45,16 @@ export function docChargesVat(type: DocType, bt: BusinessType): boolean {
   return bt !== 'exempt' && type !== 'receipt'
 }
 
+/**
+ * A document that doesn't charge VAT (any document of an exempt business, or a receipt)
+ * must not carry a VAT rate — e.g. a draft or copy made while the business was still
+ * VAT-registered. The entered prices are then the final prices.
+ */
+export function withoutVatIfExempt<T extends Pick<Doc, 'type' | 'vatRate' | 'pricesIncludeVat'>>(doc: T, bt: BusinessType): T {
+  if (docChargesVat(doc.type, bt) || (doc.vatRate === 0 && doc.pricesIncludeVat)) return doc
+  return { ...doc, vatRate: 0, pricesIncludeVat: true }
+}
+
 export const PAYMENT_METHODS: { id: PaymentMethod; label: string; installments?: boolean; refLabel?: string }[] = [
   { id: 'cash', label: 'מזומן' },
   { id: 'credit', label: 'כרטיס אשראי', installments: true, refLabel: '4 ספרות אחרונות' },

@@ -419,7 +419,7 @@ function TypeForm({ initial, exists, onClose, onDelete }: { initial: ExpenseType
           {t.recurring && (
             <div className="mt-3 space-y-3">
               <div className="grid grid-cols-2 gap-3">
-                <Field label="סכום חודשי (כולל מע״מ)">
+                <Field label={data.business.type === 'exempt' ? 'סכום חודשי' : 'סכום חודשי (כולל מע״מ)'}>
                   <NumberInput value={t.monthlyAmount} onChange={(monthlyAmount) => set({ monthlyAmount })} />
                 </Field>
                 <Field label="יום בחודש" hint="1–28">
