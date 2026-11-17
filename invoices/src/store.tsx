@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { User } from 'firebase/auth'
-import { useCloudSync, type SyncState } from './cloud'
+import { createArchive, deleteArchive, fileIdsOf, loadArchive, purgeExpiredArchives, useCloudSync, type ArchiveInfo, type SyncState } from './cloud'
 import type { AppData, Business, Customer, Doc, Expense, ListKey } from './types'
 import { DOC_META, computeTotals, dueRecurringExpenses, nextDocNumber } from './utils/docs'
 import { todayISO, uid } from './utils/format'
@@ -69,6 +69,10 @@ interface Store {
   upsert: <K extends ListKey>(list: K, item: AppData[K][number]) => void
   remove: (list: ListKey, id: string) => void
   replaceAll: (d: AppData) => void
+  /** Saves a 30-day copy in the cloud, then empties the account. */
+  resetAccount: () => Promise<void>
+  /** Brings back an archived copy (the current data is archived first, if there is any). */
+  restoreArchive: (info: ArchiveInfo) => Promise<void>
 }
 
 const Ctx = createContext<Store | null>(null)
@@ -81,7 +85,30 @@ export function StoreProvider({ user, children, loading }: { user: User; childre
     setDataState(dataRef.current)
   }, [])
 
-  const { ready, sync } = useCloudSync(user.uid, data, setData)
+  const { ready, sync, keepFilesOnNextSave } = useCloudSync(user.uid, data, setData)
+
+  // Once per session, clean up reset archives older than 30 days.
+  useEffect(() => {
+    if (ready) purgeExpiredArchives(dataRef.current).catch(() => {})
+  }, [ready])
+
+  const resetAccount = useCallback(async () => {
+    await createArchive(dataRef.current)
+    keepFilesOnNextSave()
+    setData(() => EMPTY)
+  }, [keepFilesOnNextSave, setData])
+
+  const restoreArchive = useCallback(
+    async (info: ArchiveInfo) => {
+      const archived = normalizeData(await loadArchive(info))
+      const cur = dataRef.current
+      if (cur.business.name || cur.docs.length || cur.expenses.length) await createArchive(cur)
+      keepFilesOnNextSave()
+      setData(() => archived)
+      await deleteArchive(info, fileIdsOf(archived)).catch(() => {})
+    },
+    [keepFilesOnNextSave, setData],
+  )
 
   // Fixed monthly expenses: create this month's copy once its day arrives (waits for approval).
   useEffect(() => {
@@ -181,8 +208,10 @@ export function StoreProvider({ user, children, loading }: { user: User; childre
         }),
       remove: (list, id) => setData((p) => ({ ...p, [list]: (p[list] as { id: string }[]).filter((x) => x.id !== id) })),
       replaceAll: (d) => setData(() => normalizeData(d)),
+      resetAccount,
+      restoreArchive,
     }),
-    [data, user, sync, issueDoc, setData],
+    [data, user, sync, issueDoc, setData, resetAccount, restoreArchive],
   )
 
   // Wait for the first cloud read so a new device doesn't flash the setup screen.
