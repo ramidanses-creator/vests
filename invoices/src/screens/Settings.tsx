@@ -10,6 +10,7 @@ import { BUSINESS_TYPE_LABELS, DOC_META, allowedDocTypes } from '../utils/docs'
 import { compressImage, readAsDataUrl } from '../utils/fileStore'
 import { downloadFile } from '../utils/pdf'
 import { ResetCard, RestoreCard, backupFile } from './AccountReset'
+import { StorageCard } from './StorageCard'
 
 export function Settings({ onboarding = false }: { onboarding?: boolean }) {
   const { data, setBusiness, replaceAll, user, sync } = useStore()
@@ -238,6 +239,7 @@ export function Settings({ onboarding = false }: { onboarding?: boolean }) {
                   <input ref={importInput} type="file" accept="application/json" onChange={importBackup} className="hidden" />
                 </div>
               </Card>
+              <StorageCard />
               <ResetCard />
             </div>
           </>
